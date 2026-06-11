@@ -82,16 +82,23 @@ class istitution(db.model):
     paese: Mapped[str] = mapped_column(nullable=False)
     citta: Mapped[str] = mapped_column(nullable=False)
     username_ufficio: Mapped[str] = mapped_column(ForeignKey("ufficiooverseas.username"), nullable=False)
+    # Relazione molti-a-molti — lato opposto
+    uffici: Mapped[list["ufficioOverseas"]] = relationship(
+        "ufficioOverseas",
+        secondary=vede_institution,
+        back_populates="istituti"
+    )
 
 
 class ufficiooverseas(db.Model):
     username: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
-    # Relazione molti-a-molti — lato opposto
-    uffici: Mapped[list["ufficioOverseas"]] = relationship(
-        "UfficioOverseas",
+     # Relazione molti-a-molti tramite la tabella ponte
+    istituti: Mapped[list["Institution"]] = relationship(
+        "Institution",
         secondary=vede_institution,
-        back_populates="istituti"
+        back_populates="uffici"
     )
+    
 
 
 class docentireferenti(db.Model):
