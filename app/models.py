@@ -43,14 +43,15 @@ class utenti(UserMixin, db.Model):
     password: Mapped[str] = mapped_column(String(256), nullable=False)
     cognome: Mapped[str] = mapped_column(unique=False, nullable=False)
     nome: Mapped[str] = mapped_column(nullable=False)
-    fk: Mapped[List["studente", "docentireferenti", "ufficiooverseas"]] = relationship()
+    fk_st: Mapped[List["studente"]] = relationship()
+    fk_uf: Mapped[List["ufficiooverseas"]] = relationship()
+    fk_doc: Mapped[List["docentireferenti"]] = relationship()
 
     def get_id(self):
         return str(self.username)
 
 
 class docentireferenti(db.Model):
-
     __tablename__ = "docentireferenti"
 
     learningagreement: Mapped[List["learningagreement"]] = relationship(
@@ -62,6 +63,7 @@ class docentireferenti(db.Model):
 
 
 class ufficiooverseas(db.Model):
+    __tablename__ = "ufficiooverseas"
     username: Mapped[int] = mapped_column(
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
@@ -75,8 +77,8 @@ class ufficiooverseas(db.Model):
     )
 
 
-class studente(db.model):
-    __tablename__ = "docentireferenti"
+class studente(db.Model):
+    __tablename__ = "studente"
 
     username: Mapped[int] = mapped_column(
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
@@ -85,7 +87,7 @@ class studente(db.model):
 
 
 class learningagreement(db.Model):
-    __tablename__ = "learningagreemen"
+    __tablename__ = "learningagreement"
     idla: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
     accettato: Mapped[str] = mapped_column(
         db.Enum(
@@ -143,7 +145,9 @@ class applicazione(db.Model):
     )
 
 
-class institution(db.model):
+class institution(db.Model):
+    __tablename__ = "institution" 
+    
     idin: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
     nome: Mapped[str] = mapped_column(unique=False, nullable=False)
     paese: Mapped[str] = mapped_column(nullable=False)

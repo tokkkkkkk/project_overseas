@@ -2,8 +2,6 @@ import os
 
 
 class Config:
-    # Chiave segreta per sicurezza (usata da Flask-Login e i form)
-    SECRET_KEY = "AAA"
 
     # Stringa di connessione a PostgreSQL
     # Formato: postgresql://utente:password@host:porta/nome_database
@@ -17,3 +15,5 @@ class Config:
 
     # Dimensione massima file: 16 MB
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+
+    JWT_SECRET_KEY = "super-secret"
