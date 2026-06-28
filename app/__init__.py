@@ -36,7 +36,7 @@ def create_app(test_config=None):
     db.init_app(app)
     jwt.init_app(app)
 
-    app.register_blueprint(bp_auth)
+    app.register_blueprint(bp_auth, url_prefix="/auth")
     app.register_blueprint(bp_docente, url_prefix="/docente")
     app.register_blueprint(bp_studente, url_prefix="/studente")
     app.register_blueprint(bp_ufficio, url_prefix="/ufficio")

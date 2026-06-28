@@ -41,9 +41,9 @@ class utenti(UserMixin, db.Model):
     password: Mapped[str] = mapped_column(String(256), nullable=False)
     cognome: Mapped[str] = mapped_column(unique=False, nullable=False)
     nome: Mapped[str] = mapped_column(nullable=False)
-    fk_st: Mapped[List["studente"]] = relationship()
-    fk_uf: Mapped[List["ufficiooverseas"]] = relationship()
-    fk_doc: Mapped[List["docentireferenti"]] = relationship()
+    fk_st: Mapped[List["studente"]] = relationship(back_populates="utente")
+    fk_uf: Mapped[List["ufficiooverseas"]] = relationship(back_populates="utente")
+    fk_doc: Mapped[List["docentireferenti"]] = relationship(back_populates="utente")
 
     def get_id(self):
         return str(self.username)
@@ -57,6 +57,10 @@ class docentireferenti(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
 
+    app:Mapped[List["applicazione"]]=relationship("applicazione", back_populates="docente_rel")
+    utente: Mapped["utenti"] = relationship(back_populates="fk_doc")
+
+
 
 class ufficiooverseas(db.Model):
     __tablename__ = "ufficiooverseas"
@@ -64,6 +68,7 @@ class ufficiooverseas(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
 
+    utente: Mapped["utenti"] = relationship(back_populates="fk_uf")
     # Relazione molti-a-molti tramite la tabella ponte
 
     applicazioni: Mapped[list["ufficiooverseas"]] = relationship(
@@ -82,6 +87,10 @@ class studente(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
     matricola: Mapped[str] = mapped_column(unique=True, nullable=False)
+    
+    app:Mapped["applicazione"]=relationship(back_populates="studente_rel")
+    utente: Mapped["utenti"] = relationship(back_populates="fk_st")
+    
     istituti: Mapped[list["institution"]] = relationship(
         "institution", secondary=vede_institution, back_populates="studente_view"
     )
@@ -107,7 +116,7 @@ class learningagreement(db.Model):
     docente: Mapped["docentireferenti"] = relationship(
         back_populates="learningagreement"
     )
-    ida: Mapped[List["applicazione"]] = relationship(back_populates="learningagreement")
+    ida: Mapped["applicazione"] = relationship(back_populates="learning_agreement")
 
 
 class pianoesami(db.Model):
@@ -121,6 +130,8 @@ class pianoesami(db.Model):
     titoloinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
     creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
+
+    idapp:Mapped[str] = relationship("applicazione", back_populates="idpe")
 
 
 class applicazione(db.Model):
@@ -141,13 +152,47 @@ class applicazione(db.Model):
     )
     dataarrivo: Mapped[date] = mapped_column(nullable=True)
     datapartenza: Mapped[date] = mapped_column(nullable=True)
-    idpa: Mapped[List["pianoesami"]] = relationship()
+    esami:Mapped[bool]= mapped_column(nullable=True)
+    transcriptofrecords: Mapped[str] = mapped_column(
+        db.Enum(
+            "caricato",
+            "null"
+        )
+    )
+    idin:Mapped[str]=mapped_column(ForeignKey("institution.idin"))
+    username_studente: Mapped[str] = mapped_column(ForeignKey("studente.username"))
+    username_docente:Mapped[str]=mapped_column(ForeignKey("docentireferenti.username"))
     idla: Mapped[str] = mapped_column(ForeignKey("learningagreement.idla"))
-    # Relazione molti-a-molti — lato opposto
-    learningagreement: Mapped["learningagreement"] = relationship(back_populates="ida")
+    
+    
+    #relationships
+    #institution
+    institution_rel:Mapped["institution"]=relationship(back_populates="app")
+    #piano esami
+    idpe: Mapped[List["pianoesami"]] = relationship("pianoesami", back_populates="idapp")
+    #studente
+    studente_rel: Mapped["studente"] = relationship(back_populates="app")
+    #docente
+    docente_rel: Mapped["docentireferenti"] = relationship("docentireferenti", back_populates="app")
+    #learning agreement
+    learning_agreement: Mapped["learningagreement"] = relationship(back_populates="ida")
+    #ufficio overseas
     uffici: Mapped[list["ufficiooverseas"]] = relationship(
         "ufficiooverseas", secondary=vede_applicazione, back_populates="applicazioni"
     )
+
+    #metodo to_dict
+    def to_dict(self):
+        return {
+            "ida": self.ida,
+            "stato": self.stato,
+            "esami": self.esami,
+            "username_studente": self.username_studente,
+            "username_docente": self.username_docente,
+            "idla": self.idla,
+            "dataarrivo": self.dataarrivo.isoformat() if self.dataarrivo else None,
+            "datapartenza": self.datapartenza.isoformat() if self.datapartenza else None
+        }
 
 
 class institution(db.Model):
@@ -160,8 +205,9 @@ class institution(db.Model):
     username_ufficio: Mapped[str] = mapped_column(
         ForeignKey("ufficiooverseas.username"), nullable=False
     )
-    # Relazione molti-a-molti — lato opposto
 
+    app: Mapped[List["applicazione"]] = relationship(back_populates= "institution_rel")
+    # Relazione molti-a-molti — lato opposto
     ufficio: Mapped[str] = relationship("ufficiooverseas", back_populates="istituto")
     studente_view: Mapped[list["studente"]] = relationship(
         "studente", secondary=vede_institution, back_populates="istituti"
