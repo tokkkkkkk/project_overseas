@@ -10,8 +10,8 @@ from app.routes.docente import bp_docente
 from app.routes.studente import bp_studente
 from app.routes.ufficio import bp_ufficio
 from flask_jwt_extended import JWTManager
+from .models import db
 
-db = SQLAlchemy()
 jwt = JWTManager()
 
 

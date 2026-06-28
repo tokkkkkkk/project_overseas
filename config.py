@@ -5,7 +5,9 @@ class Config:
 
     # Stringa di connessione a PostgreSQL
     # Formato: postgresql://utente:password@host:porta/nome_database
-    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:NduP5Mj9nCVxJyCK@db.nhdjencfjpmydjkzgzcd.supabase.co:5432/postgres"
+
+    # # Connect to Postgres via the shared session-mode pooler (used for migrations)
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres.nhdjencfjpmydjkzgzcd:NduP5Mj9nCVxJyCK@aws-1-eu-central-1.pooler.supabase.com:5432/postgres"
 
     # Disabilita il tracciamento modifiche (non serve e rallenta)
     SQLALCHEMY_TRACK_MODIFICATIONS = False

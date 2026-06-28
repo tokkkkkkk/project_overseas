@@ -30,9 +30,7 @@ vede_institution = Table(
     "vede_institution",
     Base.metadata,
     db.Column("idin", ForeignKey("institution.idin"), primary_key=True),
-    db.Column(
-        "username_ufficio", ForeignKey("ufficiooverseas.username"), primary_key=True
-    ),
+    db.Column("username_studente", ForeignKey("studente.username"), primary_key=True),
 )
 
 
@@ -54,26 +52,26 @@ class utenti(UserMixin, db.Model):
 class docentireferenti(db.Model):
     __tablename__ = "docentireferenti"
 
-    learningagreement: Mapped[List["learningagreement"]] = relationship(
-        "learningagreement", back_populates="docentireferenti"
-    )
-    username: Mapped[int] = mapped_column(
+    learningagreement: Mapped[List["learningagreement"]] = relationship()
+    username: Mapped[str] = mapped_column(
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
 
 
 class ufficiooverseas(db.Model):
     __tablename__ = "ufficiooverseas"
-    username: Mapped[int] = mapped_column(
+    username: Mapped[str] = mapped_column(
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
 
     # Relazione molti-a-molti tramite la tabella ponte
-    istituti: Mapped[list["institution"]] = relationship(
-        "Institution", secondary=vede_institution, back_populates="uffici"
-    )
+
     applicazioni: Mapped[list["ufficiooverseas"]] = relationship(
-        "UfficioOverseas", secondary=vede_applicazione, back_populates="uffici"
+        "applicazione", secondary=vede_applicazione, back_populates="uffici"
+    )
+
+    istituto: Mapped[list["ufficiooverseas"]] = relationship(
+        "institution", back_populates="ufficio"
     )
 
 
@@ -84,6 +82,9 @@ class studente(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
     matricola: Mapped[str] = mapped_column(unique=True, nullable=False)
+    istituti: Mapped[list["institution"]] = relationship(
+        "institution", secondary=vede_institution, back_populates="studente_view"
+    )
 
 
 class learningagreement(db.Model):
@@ -103,7 +104,10 @@ class learningagreement(db.Model):
     username_docente: Mapped[str] = mapped_column(
         String, ForeignKey("docentireferenti.username")
     )
-    ida: Mapped[List["applicazione"]] = relationship()
+    docente: Mapped["docentireferenti"] = relationship(
+        back_populates="learningagreement"
+    )
+    ida: Mapped[List["applicazione"]] = relationship(back_populates="learningagreement")
 
 
 class pianoesami(db.Model):
@@ -138,16 +142,17 @@ class applicazione(db.Model):
     dataarrivo: Mapped[date] = mapped_column(nullable=True)
     datapartenza: Mapped[date] = mapped_column(nullable=True)
     idpa: Mapped[List["pianoesami"]] = relationship()
-    idla: Mapped[int] = mapped_column(ForeignKey("learningagreement.idla"))
+    idla: Mapped[str] = mapped_column(ForeignKey("learningagreement.idla"))
     # Relazione molti-a-molti — lato opposto
+    learningagreement: Mapped["learningagreement"] = relationship(back_populates="ida")
     uffici: Mapped[list["ufficiooverseas"]] = relationship(
-        "ufficioOverseas", secondary=vede_applicazione, back_populates="applicazioni"
+        "ufficiooverseas", secondary=vede_applicazione, back_populates="applicazioni"
     )
 
 
 class institution(db.Model):
-    __tablename__ = "institution" 
-    
+    __tablename__ = "institution"
+
     idin: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
     nome: Mapped[str] = mapped_column(unique=False, nullable=False)
     paese: Mapped[str] = mapped_column(nullable=False)
@@ -156,6 +161,8 @@ class institution(db.Model):
         ForeignKey("ufficiooverseas.username"), nullable=False
     )
     # Relazione molti-a-molti — lato opposto
-    uffici: Mapped[list["ufficiooverseas"]] = relationship(
-        "ufficioOverseas", secondary=vede_institution, back_populates="istituti"
+
+    ufficio: Mapped[str] = relationship("ufficiooverseas", back_populates="istituto")
+    studente_view: Mapped[list["studente"]] = relationship(
+        "studente", secondary=vede_institution, back_populates="istituti"
     )
