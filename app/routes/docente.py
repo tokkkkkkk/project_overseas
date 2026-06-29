@@ -5,8 +5,11 @@ from sqlalchemy import Integer, String, select
 
 from app.models import applicazione, studente, learningagreement, docentireferenti
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import jsonify, request, Blueprint
+from flask import jsonify, request, Blueprint, send_file
 from app.models import utenti, db
+import os
+
+CARTELLA_UPLOADS = "uploads"
 
 bp_docente = Blueprint(
     "docente",
@@ -61,5 +64,10 @@ def get_learning_agreement(ida):
     la_ex = db.session.execute(la).scalars().first()
     if not la_ex:
         return jsonify({"msg": "learning agreement non presente"}), 404
+    
+    percorso = os.path.join(CARTELLA_UPLOADS, la_ex.percorso_file)
 
-    return jsonify(la_ex.to_dict()), 200
+    if not percorso.is_file():
+        return jsonify({"msg:" "file non trovato"})
+    
+    return send_file(percorso)

@@ -113,6 +113,8 @@ class learningagreement(db.Model):
     username_docente: Mapped[str] = mapped_column(
         String, ForeignKey("docentireferenti.username")
     )
+    percorso_file: Mapped[str]
+
     docente: Mapped["docentireferenti"] = relationship(
         back_populates="learningagreement"
     )
