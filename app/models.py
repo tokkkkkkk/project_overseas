@@ -118,6 +118,15 @@ class learningagreement(db.Model):
     )
     ida: Mapped["applicazione"] = relationship(back_populates="learning_agreement")
 
+    def to_dict(self):
+        return {
+            "idla": self.idla,
+            "accettato": str(self.accettato) if self.accettato else None,
+            "data": self.data.isoformat() if self.data else None,
+            "motivazione": self.motivazione,
+            "username_docente": self.username_docente
+        }
+
 
 class pianoesami(db.Model):
     __tablename__ = "pianoesami"
@@ -146,6 +155,7 @@ class applicazione(db.Model):
             "in corso",
             "completato",
             "annullato",
+            "viaggioCompletato",
             name="stato_applicazione",
             nullable=False,
         )

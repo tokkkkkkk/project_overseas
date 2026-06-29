@@ -18,8 +18,11 @@ bp_docente = Blueprint(
 @jwt_required()
 def get_studenti():
     docente_id = get_jwt_identity()
-    studenti = applicazione.query.filter_by(username_docente=docente_id).all()
-    return jsonify([s.to_dict() for s in studenti]), 200
+    studenti = select(applicazione).where(applicazione.username_docente==docente_id)
+    stud = db.session.execute(studenti).scalar()
+
+    return jsonify(stud.to_dict()), 200
+    #return jsonify([s.to_dict() for s in stud]), 200
 
 
 @bp_docente.route("studenti/<string:username>/applicazione", methods=["GET"])
@@ -42,15 +45,21 @@ def get_applicazione(username):
     "studenti/<username>/applicazione/<ida>/learning_agreement", methods=["GET"]
 )
 @jwt_required()
-def get_learning_agreement(ida, username):
+def get_learning_agreement(ida):
     docente_id = get_jwt_identity()
+
     learningA = select(applicazione).where(
         applicazione.ida == ida, applicazione.username_docente == docente_id
     )
-    learningA = sq.select(applicazione.c.idla).where(
-        applicazione.ida == ida, applicazione.username_docente == docente_id
+    learning_A = db.session.execute(learningA).scalars().first()
+    if not learning_A:
+        return jsonify({"msg": "applicazione non trovata"}), 404
+    
+    la = select(learningagreement).where(
+        learningagreement.idla == learning_A.idla
     )
-    la = sq.select(learningagreement).where(
-        learningagreement.c.idla == learningA.c.idla,
-    )
-    return jsonify(la.to_dict())
+    la_ex = db.session.execute(la).scalars().first()
+    if not la_ex:
+        return jsonify({"msg": "learning agreement non presente"}), 404
+
+    return jsonify(la_ex.to_dict()), 200
