@@ -1,3 +1,5 @@
+import uuid
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from sqlalchemy.orm import DeclarativeBase
@@ -172,7 +174,7 @@ class pianoesami(db.Model):
 class applicazione(db.Model):
     __tablename__ = "applicazione"
 
-    ida: Mapped[str] = mapped_column(primary_key=True, default=create_id)
+    ida: Mapped[str] = mapped_column(primary_key=True,default=lambda: f"APP{str(uuid.uuid4())[:6].upper()}")
     stato: Mapped[str] = mapped_column(
         db.Enum(
             "creato",

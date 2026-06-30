@@ -58,6 +58,18 @@ export class AuthService {
   }
 
   getRuolo(): string | null {
-    return this.utenteCorrente()?.ruolo ?? null;
+  // Prima prova il signal (se l'utente è appena loggato)
+  const fromSignal = this.utenteCorrente()?.ruolo;
+  if (fromSignal) return fromSignal;
+  
+  // Poi prova localStorage (dopo un refresh)
+  if (this.isBrowser) {
+    const saved = localStorage.getItem('utente');
+    if (saved) {
+      const utente = JSON.parse(saved);
+      return utente.ruolo ?? null;
+    }
   }
+  return null;
+}
 }

@@ -105,3 +105,18 @@ tr:hover td { background: #fafbfc; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
 .text-muted { color: #9aa0b0; }
+
+app-navbar .topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+/* Spazio per la navbar fissa */
+main.with-sidebar { 
+  margin-left: 220px !important; 
+  padding: 2rem !important;
+  padding-top: calc(56px + 2rem) !important;
+}

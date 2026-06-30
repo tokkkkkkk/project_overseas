@@ -83,7 +83,7 @@ export class StudenteDashboardComponent implements OnInit {
 
   ngOnInit() {
     this.praticaService.getMiePratiche().subscribe({
-      next: (data) => { this.pratiche = data; this.loading = false; },
+     next: (data: PraticaMobilita[]) => { this.pratiche = data; this.loading = false; },
       error: () => { this.loading = false; }
     });
   }

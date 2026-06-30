@@ -17,9 +17,13 @@ import { AuthService } from './services/auth.service';
     </main>
   `,
   styles: [`
-    main { min-height: 100vh; background: #f5f6fa; }
-    main.with-sidebar { margin-left: 220px; padding: 2rem; }
-  `]
+  main { min-height: 100vh; background: #f5f6fa; }
+  main.with-sidebar { 
+    margin-left: 220px; 
+    padding: 2rem;
+    padding-top: calc(56px + 2rem);
+  }
+`]
 })
 export class AppComponent {
   constructor(public auth: AuthService) {}
