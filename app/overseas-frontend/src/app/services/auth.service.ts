@@ -58,6 +58,7 @@ export class AuthService {
   }
 
   getRuolo(): string | null {
+<<<<<<< HEAD
   // Prima prova il signal (se l'utente è appena loggato)
   const fromSignal = this.utenteCorrente()?.ruolo;
   if (fromSignal) return fromSignal;
@@ -72,4 +73,8 @@ export class AuthService {
   }
   return null;
 }
+=======
+    return this.utenteCorrente()?.ruolo ?? null;
+  }
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
 }

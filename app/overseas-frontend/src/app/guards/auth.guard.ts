@@ -1,7 +1,15 @@
+<<<<<<< HEAD
+=======
+// guards/auth.guard.ts
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
+<<<<<<< HEAD
+=======
+// Blocca l'accesso se non loggato
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
@@ -9,6 +17,7 @@ export const authGuard: CanActivateFn = () => {
   return router.createUrlTree(['/login']);
 };
 
+<<<<<<< HEAD
 export const studenteGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
@@ -29,3 +38,28 @@ export const ufficioGuard: CanActivateFn = () => {
   if (auth.isLoggedIn() && auth.getRuolo() === 'ufficio') return true;
   return router.createUrlTree(['/login']);
 };
+=======
+// Blocca l'accesso se non sei studente
+export const studenteGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.getRuolo() === 'studente') return true;
+  return router.createUrlTree(['/login']);
+};
+
+// Blocca l'accesso se non sei docente
+export const docenteGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.getRuolo() === 'docente') return true;
+  return router.createUrlTree(['/login']);
+};
+
+// Blocca l'accesso se non sei ufficio
+export const ufficioGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  if (auth.getRuolo() === 'ufficio') return true;
+  return router.createUrlTree(['/login']);
+};
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87

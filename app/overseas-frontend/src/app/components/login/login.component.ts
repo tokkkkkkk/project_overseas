@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
+<<<<<<< HEAD
   @if (checking) {
   <div class="login-wrap">
     <p style="color:#7a8090;font-size:13px">Caricamento...</p>
@@ -19,6 +20,8 @@ import { CommonModule } from '@angular/common';
     <!-- tutto il resto del form invariato -->
   </div>
 }
+=======
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
     <div class="login-wrap">
       <div class="login-card">
         <div class="login-logo">
@@ -74,6 +77,7 @@ export class LoginComponent {
   password = '';
   errore = '';
   loading = false;
+<<<<<<< HEAD
  checking = true; // nuovo
 
   constructor(private auth: AuthService, private router: Router) {
@@ -86,6 +90,10 @@ export class LoginComponent {
       this.checking = false; // mostra il form solo se non loggato
     }
   }
+=======
+
+  constructor(private auth: AuthService, private router: Router) {}
+>>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
 
   login() {
     if (!this.username || !this.password) {
