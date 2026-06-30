@@ -21,11 +21,11 @@ bp_docente = Blueprint(
 @jwt_required()
 def get_studenti():
     docente_id = get_jwt_identity()
-    studenti = select(applicazione).where(applicazione.username_docente==docente_id)
+    studenti = select(applicazione).where(applicazione.username_docente == docente_id)
     stud = db.session.execute(studenti).scalar()
 
     return jsonify(stud.to_dict()), 200
-    #return jsonify([s.to_dict() for s in stud]), 200
+    # return jsonify([s.to_dict() for s in stud]), 200
 
 
 @bp_docente.route("studenti/<string:username>/applicazione", methods=["GET"])
@@ -48,7 +48,7 @@ def get_applicazione(username):
     "studenti/<username>/applicazione/<ida>/learning_agreement", methods=["GET"]
 )
 @jwt_required()
-def get_learning_agreement(ida):
+def get_learning_agreement(username, ida):
     docente_id = get_jwt_identity()
 
     learningA = select(applicazione).where(
@@ -57,17 +57,15 @@ def get_learning_agreement(ida):
     learning_A = db.session.execute(learningA).scalars().first()
     if not learning_A:
         return jsonify({"msg": "applicazione non trovata"}), 404
-    
-    la = select(learningagreement).where(
-        learningagreement.idla == learning_A.idla
-    )
+
+    la = select(learningagreement).where(learningagreement.idla == learning_A.idla)
     la_ex = db.session.execute(la).scalars().first()
     if not la_ex:
         return jsonify({"msg": "learning agreement non presente"}), 404
-    
+
     percorso = os.path.join(CARTELLA_UPLOADS, la_ex.percorso_file)
 
     if not percorso.is_file():
         return jsonify({"msg:" "file non trovato"})
-    
+
     return send_file(percorso)

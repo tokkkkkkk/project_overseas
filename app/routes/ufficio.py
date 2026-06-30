@@ -35,7 +35,7 @@ def app_da_verificare():
 
     return jsonify([p.to_dict() for p in pratiche])
 
-@bp_ufficio.route("/app/<string:ida>/approvazzione", methods = ["PATCH"])
+@bp_ufficio.route("/app/<string:ida>/approvazione", methods = ["PATCH"])
 @jwt_required()
 def verifica_app(ida):
     dati = request.json
