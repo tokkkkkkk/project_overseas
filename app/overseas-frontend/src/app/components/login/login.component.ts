@@ -77,7 +77,6 @@ export class LoginComponent {
   password = '';
   errore = '';
   loading = false;
-<<<<<<< HEAD
  checking = true; // nuovo
 
   constructor(private auth: AuthService, private router: Router) {
@@ -90,10 +89,6 @@ export class LoginComponent {
       this.checking = false; // mostra il form solo se non loggato
     }
   }
-=======
-
-  constructor(private auth: AuthService, private router: Router) {}
->>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
 
   login() {
     if (!this.username || !this.password) {
