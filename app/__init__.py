@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
@@ -36,10 +37,18 @@ def create_app(test_config=None):
     db.init_app(app)
     jwt.init_app(app)
 
-    app.register_blueprint(bp_auth, url_prefix="/auth")
+    app.register_blueprint(bp_auth, url_prefix="/api")
     app.register_blueprint(bp_docente, url_prefix="/docente")
     app.register_blueprint(bp_studente, url_prefix="/studente")
     app.register_blueprint(bp_ufficio, url_prefix="/ufficio")
+
+    # Modifica la configurazione CORS così:
+    CORS(app, resources={r"/*": {
+    "origins": "http://localhost:4200",
+    "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+    "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+    "supports_credentials": True
+    }})
 
     return app
 
