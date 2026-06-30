@@ -6,6 +6,7 @@ from sqlalchemy import Integer, String, select
 from app.models import applicazione, studente, learningagreement, docentireferenti, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import jsonify, request, Blueprint, redirect
+from app.models import pianoesami, applicazione, create_id
 
 bp_studente = Blueprint(
     "studente",
@@ -20,32 +21,64 @@ def get_my_app():
 
     query = select(applicazione).where(applicazione.username_studente == studente_id)
 
-    app = db.session.execute(query).first()
+    app = db.session.execute(query).scalars().first()
     if not app:
-        return jsonify({"msg": "lo studente non possiede un'applicazione, crearne una"})
+        return (
+            jsonify(
+                {
+                    "msg": "lo studente non possiede un'applicazione, crearne una",
+                    "has_application": False,
+                }
+            ),
+            200,
+        )
 
-    # NON SO SE ABBIA SENSO
-    match app.stato:
-        case "creato":
-            return
-        case "in attesa":
-            return
-        case "pre-partenza":
-            return
-        case "in corso":
-            return
-        case "completato":
-            return
-        case "annullato":
-            return
-        case "viaggioCompletato":
-            return
-    return jsonify([a.to_dict() for a in app])
+    data = app.to_dict()
+    if app.stato in ("in riconoscimento esami", "completato"):
+        data["esami"] = [e.to_dict() for e in app.esami]
+
+    return jsonify({"has_application": True, "applicazione": app.to_dict()}), 200
 
 
-@bp_studente.route("/create_applicazione", methods=["PATCH"])
+@bp_studente.route("/create_applicazione", methods=["PUT"])
 @jwt_required()
 def create_myapp():
     studente_id = get_jwt_identity()
+    dati = request.json
 
+    nuovi_esami = [
+        pianoesami(
+            applicazione_id=dati["applicazione_id"],
+            codice_estero=e["codice_estero"],
+            titolo_estero=e["titolo_estero"],
+            crediti_estero=e["crediti_estero"],
+            codice_cafoscari=e["codice_cafoscari"],
+            titolo_cafoscari=e["titolo_cafoscari"],
+            crediti_cafoscari=e["crediti_cafoscari"],
+        )
+        for e in dati["esami"]
+    ]
 
+    db.session.add_all(nuovi_esami)
+    db.session.commit()
+
+    nuovo_ida = create_id(sq.session, applicazione)
+    anno_acc = dati["anno_accademico"]
+    istituto = dati["istituto"]
+    periodo = dati["periodo"]
+    docente = dati["docente"]
+
+    app = applicazione(
+        ida=nuovo_ida,
+        stato="creato",
+        esami=False,
+        transcriptofrecords=False,
+        idin=istituto,
+        username_studente=studente_id,
+        username_docente=docente,
+        anno_accademico=anno_acc,
+        periodo_previsto=periodo,
+    )
+
+    db.session.add(app)
+    db.session.commit()

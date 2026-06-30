@@ -5,10 +5,33 @@ from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import func
 from datetime import date
-from sqlalchemy import Date, Text, ForeignKey
+from sqlalchemy import Date, Text, ForeignKey, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional
 from sqlalchemy import Table, Column, ForeignKey
+
+
+def create_id(session, modello_applicazione):
+    """
+    Cerca l'ultimo ID (es. APP008), lo incrementa e restituisce APP009.
+    Se la tabella è vuota, restituisce APP001.
+    """
+    # Ordiniamo in modo decrescente per prendere il più alto
+    query = select(modello_applicazione.ida).order_by(modello_applicazione.ida.desc())
+    ultimo_id = session.execute(query).scalars().first()
+
+    if ultimo_id:
+        # ultimo_id è una stringa tipo "APP015"
+        # Prendiamo tutto dal 3° carattere in poi (cioè "015") e lo facciamo diventare numero intero (15)
+        numero_attuale = int(ultimo_id[3:])
+        nuovo_numero = numero_attuale + 1
+    else:
+        # Se il database è completamente vuoto, partiamo da 1
+        nuovo_numero = 1
+
+    # La vera magia di Python: formatta il numero con esattamente 3 cifre riempiendo di zeri!
+    # Se nuovo_numero è 7 -> APP007. Se è 42 -> APP042.
+    return f"APP{nuovo_numero:03d}"
 
 
 class Base(DeclarativeBase):
@@ -57,9 +80,10 @@ class docentireferenti(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
 
-    app:Mapped[List["applicazione"]]=relationship("applicazione", back_populates="docente_rel")
+    app: Mapped[List["applicazione"]] = relationship(
+        "applicazione", back_populates="docente_rel"
+    )
     utente: Mapped["utenti"] = relationship(back_populates="fk_doc")
-
 
 
 class ufficiooverseas(db.Model):
@@ -87,10 +111,10 @@ class studente(db.Model):
         ForeignKey("utenti.username"), primary_key=True, unique=True, nullable=False
     )
     matricola: Mapped[str] = mapped_column(unique=True, nullable=False)
-    
-    app:Mapped["applicazione"]=relationship(back_populates="studente_rel")
+
+    app: Mapped["applicazione"] = relationship(back_populates="studente_rel")
     utente: Mapped["utenti"] = relationship(back_populates="fk_st")
-    
+
     istituti: Mapped[list["institution"]] = relationship(
         "institution", secondary=vede_institution, back_populates="studente_view"
     )
@@ -126,7 +150,7 @@ class learningagreement(db.Model):
             "accettato": str(self.accettato) if self.accettato else None,
             "data": self.data.isoformat() if self.data else None,
             "motivazione": self.motivazione,
-            "username_docente": self.username_docente
+            "username_docente": self.username_docente,
         }
 
 
@@ -142,13 +166,13 @@ class pianoesami(db.Model):
     creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
 
-    idapp:Mapped[str] = relationship("applicazione", back_populates="idpe")
+    idapp: Mapped[str] = relationship("applicazione", back_populates="idpe")
 
 
 class applicazione(db.Model):
     __tablename__ = "applicazione"
 
-    ida: Mapped[int] = mapped_column(primary_key=True)
+    ida: Mapped[str] = mapped_column(primary_key=True, default=create_id)
     stato: Mapped[str] = mapped_column(
         db.Enum(
             "creato",
@@ -164,36 +188,38 @@ class applicazione(db.Model):
     )
     dataarrivo: Mapped[date] = mapped_column(nullable=True)
     datapartenza: Mapped[date] = mapped_column(nullable=True)
-    esami:Mapped[bool]= mapped_column(nullable=True)
-    transcriptofrecords: Mapped[str] = mapped_column(
-        db.Enum(
-            "caricato",
-            "null"
-        )
-    )
-    idin:Mapped[str]=mapped_column(ForeignKey("institution.idin"))
+    esami: Mapped[bool] = mapped_column(nullable=True)
+    transcriptofrecords: Mapped[str] = mapped_column(db.Enum("caricato", "null"))
+    anno_accademico: Mapped[date] = mapped_column(nullable=True)
+    periodo_previsto: Mapped[str]
+    idin: Mapped[str] = mapped_column(ForeignKey("institution.idin"))
     username_studente: Mapped[str] = mapped_column(ForeignKey("studente.username"))
-    username_docente:Mapped[str]=mapped_column(ForeignKey("docentireferenti.username"))
+    username_docente: Mapped[str] = mapped_column(
+        ForeignKey("docentireferenti.username")
+    )
     idla: Mapped[str] = mapped_column(ForeignKey("learningagreement.idla"))
-    
-    
-    #relationships
-    #institution
-    institution_rel:Mapped["institution"]=relationship(back_populates="app")
-    #piano esami
-    idpe: Mapped[List["pianoesami"]] = relationship("pianoesami", back_populates="idapp")
-    #studente
+
+    # relationships
+    # institution
+    institution_rel: Mapped["institution"] = relationship(back_populates="app")
+    # piano esami
+    idpe: Mapped[List["pianoesami"]] = relationship(
+        "pianoesami", back_populates="idapp"
+    )
+    # studente
     studente_rel: Mapped["studente"] = relationship(back_populates="app")
-    #docente
-    docente_rel: Mapped["docentireferenti"] = relationship("docentireferenti", back_populates="app")
-    #learning agreement
+    # docente
+    docente_rel: Mapped["docentireferenti"] = relationship(
+        "docentireferenti", back_populates="app"
+    )
+    # learning agreement
     learning_agreement: Mapped["learningagreement"] = relationship(back_populates="ida")
-    #ufficio overseas
+    # ufficio overseas
     uffici: Mapped[list["ufficiooverseas"]] = relationship(
         "ufficiooverseas", secondary=vede_applicazione, back_populates="applicazioni"
     )
 
-    #metodo to_dict
+    # metodo to_dict
     def to_dict(self):
         return {
             "ida": self.ida,
@@ -203,7 +229,9 @@ class applicazione(db.Model):
             "username_docente": self.username_docente,
             "idla": self.idla,
             "dataarrivo": self.dataarrivo.isoformat() if self.dataarrivo else None,
-            "datapartenza": self.datapartenza.isoformat() if self.datapartenza else None
+            "datapartenza": (
+                self.datapartenza.isoformat() if self.datapartenza else None
+            ),
         }
 
 
@@ -218,7 +246,7 @@ class institution(db.Model):
         ForeignKey("ufficiooverseas.username"), nullable=False
     )
 
-    app: Mapped[List["applicazione"]] = relationship(back_populates= "institution_rel")
+    app: Mapped[List["applicazione"]] = relationship(back_populates="institution_rel")
     # Relazione molti-a-molti — lato opposto
     ufficio: Mapped[str] = relationship("ufficiooverseas", back_populates="istituto")
     studente_view: Mapped[list["studente"]] = relationship(
