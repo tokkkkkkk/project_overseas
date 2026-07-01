@@ -2,49 +2,58 @@ import flask
 import sqlalchemy as sq
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, select
-
-from app.models import applicazione, studente, learningagreement, docentireferenti, db
+from app.models import applicazione, institution, studente, learningagreement, docentireferenti, db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import jsonify, request, Blueprint, redirect
 from app.models import pianoesami, applicazione, create_id
+
 
 bp_studente = Blueprint(
     "studente",
     __name__,
 )
 
-
-@bp_studente.route("/my_applicazione", methods=["GET"])
+@bp_studente.route("/pratiche", methods=["GET"])
 @jwt_required()
 def get_my_app():
     studente_id = get_jwt_identity()
-
     query = select(applicazione).where(applicazione.username_studente == studente_id)
+    app = db.session.execute(query).scalars().all() #messo all al posto di first, dato che angular si aspetta una lista
 
-    app = db.session.execute(query).scalars().first()
     if not app:
-        return (
-            jsonify(
-                {
-                    "msg": "lo studente non possiede un'applicazione, crearne una",
-                    "has_application": False,
-                }
-            ),
-            200,
-        )
-
-    data = app.to_dict()
-    if app.stato in ("in riconoscimento esami", "completato"):
-        data["esami"] = [e.to_dict() for e in app.esami]
-
-    return jsonify({"has_application": True, "applicazione": app.to_dict()}), 200
+        return jsonify([]), 200
+    pratiche_json = [pratica.to_dict() for pratica in app]
+    return jsonify(pratiche_json), 200
 
 
-@bp_studente.route("/create_applicazione", methods=["PUT"])
+
+@bp_studente.route("/pratiche", methods=["POST"])
 @jwt_required()
 def create_myapp():
     studente_id = get_jwt_identity()
     dati = request.json
+    nuovo_ida = create_id(db.session, applicazione)
+    anno_acc = dati["anno_accademico"]
+    istituto_id = dati["istituto"]
+    periodo = dati["periodo"]
+    docente = dati["docente"]
+
+    app = applicazione(
+        ida=nuovo_ida,
+        stato="creato",
+        esami=False,
+        transcriptofrecords=False,
+        idin=istituto_id,
+        username_studente=studente_id,
+        username_docente=docente,
+        anno_accademico=anno_acc,
+        periodo_previsto=periodo,
+    )
+
+    db.session.add(app)
+    db.session.flush()
+
+   
 
     nuovi_esami = [
         pianoesami(
@@ -59,26 +68,24 @@ def create_myapp():
         for e in dati["esami"]
     ]
 
+
+
     db.session.add_all(nuovi_esami)
     db.session.commit()
 
-    nuovo_ida = create_id(sq.session, applicazione)
-    anno_acc = dati["anno_accademico"]
-    istituto = dati["istituto"]
-    periodo = dati["periodo"]
-    docente = dati["docente"]
 
-    app = applicazione(
-        ida=nuovo_ida,
-        stato="creato",
-        esami=False,
-        transcriptofrecords=False,
-        idin=istituto,
-        username_studente=studente_id,
-        username_docente=docente,
-        anno_accademico=anno_acc,
-        periodo_previsto=periodo,
-    )
+@bp_studente.route("/istituti", methods=["GET"])
+@jwt_required()
+def get_my_institution():
 
-    db.session.add(app)
-    db.session.commit()
+    query = select(institution)
+    institution_db = db.session.execute(query).scalars().all()
+    return jsonify([istituti.to_dict() for istituti in institution_db]), 200
+
+@bp_studente.route("/docente", methods=["GET"])
+@jwt_required()
+def get_my_docente():
+
+    query = select(docentireferenti)
+    docentireferenti_db = db.session.execute(query).scalars().all()
+    return jsonify([docenti.to_dict() for docenti in docentireferenti_db]), 200

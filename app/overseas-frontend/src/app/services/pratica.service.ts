@@ -83,10 +83,10 @@ export class PraticaService {
   // ---- ISTITUTI E DOCENTI ----
 
   getIstituti(): Observable<IstitutoOspitante[]> {
-    return this.http.get<IstitutoOspitante[]>(`${this.apiUrl}/istituti`);
+    return this.http.get<IstitutoOspitante[]>(`${this.apiUrl}/studente/istituti`);
   }
 
   getDocenti(): Observable<Utente[]> {
-    return this.http.get<Utente[]>(`${this.apiUrl}/docente/docenti`);
+    return this.http.get<Utente[]>(`${this.apiUrl}/studente/docente`);
   }
 }
