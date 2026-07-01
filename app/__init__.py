@@ -43,10 +43,10 @@ def create_app(test_config=None):
     app.register_blueprint(bp_ufficio, url_prefix="/api/ufficio")
 
     CORS(app, resources={r"/*": {
-    "origins": "http://localhost:4200",
-    "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
-    "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
-    "supports_credentials": True
+        "origins": "http://localhost:4200",
+        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
+        "supports_credentials": True
     }})
 
     return app

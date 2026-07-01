@@ -13,13 +13,8 @@ export class PraticaService {
 
   // ---- PRATICHE ----
 
-<<<<<<< HEAD
  getMiePratiche(): Observable<PraticaMobilita[]> {
     return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/studente/pratiche`);
-=======
-  getMiePratiche(): Observable<PraticaMobilita[]> {
-    return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/pratiche`);
->>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
   }
 
   getTutteLePratiche(): Observable<PraticaMobilita[]> {
@@ -92,10 +87,6 @@ export class PraticaService {
   }
 
   getDocenti(): Observable<Utente[]> {
-<<<<<<< HEAD
     return this.http.get<Utente[]>(`${this.apiUrl}/docente/docenti`);
-=======
-    return this.http.get<Utente[]>(`${this.apiUrl}/docenti`);
->>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
   }
 }

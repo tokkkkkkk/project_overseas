@@ -10,47 +10,41 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [FormsModule, CommonModule, RouterLink],
   template: `
-<<<<<<< HEAD
-  @if (checking) {
-  <div class="login-wrap">
-    <p style="color:#7a8090;font-size:13px">Caricamento...</p>
-  </div>
-} @else {
-  <div class="login-wrap">
-    <!-- tutto il resto del form invariato -->
-  </div>
-}
-=======
->>>>>>> c3cd31bdbf6c12b3d280b09d33536c8539992b87
-    <div class="login-wrap">
-      <div class="login-card">
-        <div class="login-logo">
-          <div class="logo-icon">🌍</div>
-          <h1 class="login-title">Portale Overseas</h1>
-          <p class="login-sub">Università Ca' Foscari Venezia</p>
-        </div>
-
-        @if (errore) {
-          <div class="alert-error">{{ errore }}</div>
-        }
-
-        <div class="form-group">
-          <label class="form-label">Username</label>
-          <input class="form-control" type="text" [(ngModel)]="username" placeholder="mario.rossi" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password</label>
-          <input class="form-control" type="password" [(ngModel)]="password" (keyup.enter)="login()" placeholder="••••••••" />
-        </div>
-        <button class="btn-login" (click)="login()" [disabled]="loading">
-          {{ loading ? 'Accesso in corso...' : 'Accedi' }}
-        </button>
-
-        <p class="register-link">
-          Non hai un account? <a routerLink="/register">Registrati</a>
-        </p>
+    @if (checking) {
+      <div class="login-wrap">
+        <p style="color:#7a8090;font-size:13px">Caricamento...</p>
       </div>
-    </div>
+    } @else {
+      <div class="login-wrap">
+        <div class="login-card">
+          <div class="login-logo">
+            <div class="logo-icon">🌍</div>
+            <h1 class="login-title">Portale Overseas</h1>
+            <p class="login-sub">Università Ca' Foscari Venezia</p>
+          </div>
+
+          @if (errore) {
+            <div class="alert-error">{{ errore }}</div>
+          }
+
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input class="form-control" type="text" [(ngModel)]="username" placeholder="mario.rossi" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input class="form-control" type="password" [(ngModel)]="password" (keyup.enter)="login()" placeholder="••••••••" />
+          </div>
+          <button class="btn-login" (click)="login()" [disabled]="loading">
+            {{ loading ? 'Accesso in corso...' : 'Accedi' }}
+          </button>
+
+          <p class="register-link">
+            Non hai un account? <a routerLink="/register">Registrati</a>
+          </p>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f4f8; }
@@ -77,7 +71,7 @@ export class LoginComponent {
   password = '';
   errore = '';
   loading = false;
- checking = true; // nuovo
+  checking = true; // nuovo
 
   constructor(private auth: AuthService, private router: Router) {
     if (this.auth.isLoggedIn()) {
@@ -89,7 +83,6 @@ export class LoginComponent {
       this.checking = false; // mostra il form solo se non loggato
     }
   }
-
   login() {
     if (!this.username || !this.password) {
       this.errore = 'Inserisci username e password';
