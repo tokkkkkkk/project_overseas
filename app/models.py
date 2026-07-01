@@ -248,7 +248,7 @@ class institution(db.Model):
     idin: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
     nome: Mapped[str] = mapped_column(unique=False, nullable=False)
     paese: Mapped[str] = mapped_column(nullable=False)
-    citta: Mapped[str] = mapped_column(nullable=False)
+    citta: Mapped[str] = mapped_column("città", nullable=False)
     username_ufficio: Mapped[str] = mapped_column(
         ForeignKey("ufficiooverseas.username"), nullable=False
     )
@@ -259,3 +259,10 @@ class institution(db.Model):
     studente_view: Mapped[list["studente"]] = relationship(
         "studente", secondary=vede_institution, back_populates="istituti"
     )
+     # metodo to_dict
+    def to_dict(self):
+        return {
+            "idin": self.idin,
+            "nome": self.nome,
+            "paese": self.paese,
+        }

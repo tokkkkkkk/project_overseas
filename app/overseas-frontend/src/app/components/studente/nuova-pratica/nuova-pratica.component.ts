@@ -1,10 +1,12 @@
 // components/studente/nuova-pratica/nuova-pratica.component.ts
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit,  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
 import { IstitutoOspitante, MappingEsame, Utente } from '../../../models/models';
+
+
 
 @Component({
   selector: 'app-nuova-pratica',
@@ -41,12 +43,16 @@ import { IstitutoOspitante, MappingEsame, Utente } from '../../../models/models'
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Istituto ospitante</label>
-          <select class="form-control" [(ngModel)]="form.istituto_id">
-            <option value="">Seleziona istituto...</option>
-            @for (ist of istituti; track ist.idin) {
-              <option [value]="ist.idin">{{ ist.nome }} — {{ ist.paese }}</option>
-            }
-          </select>
+          @if (loading_3) {
+            <p>Caricamento...</p>
+          }@else {
+            <select class="form-control" [(ngModel)]="form.istituto_id">
+            <option value="" disabled>Seleziona istituto...</option>
+              @for (ist of istituti; track ist.idin) {
+                <option [value]="ist.idin">{{ ist.nome }} — {{ ist.paese }}</option>
+              }
+            </select>
+          }
         </div>
         <div class="form-group">
           <label class="form-label">Docente referente</label>
@@ -145,6 +151,8 @@ export class NuovaPraticaComponent implements OnInit {
   errore = '';
   loading = false;
   loading_2 = false;
+  loading_3 = false;
+
 
   form = {
     anno_accademico: '2025/2026',
@@ -155,17 +163,27 @@ export class NuovaPraticaComponent implements OnInit {
     mapping_esami: [this.nuovoEsame()]
   };
 
-  constructor(private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
+  constructor(private praticaService: PraticaService, private router: Router) { }
 
   ngOnInit() {
     console.log('ngOnInit fired');
-    this.praticaService.getIstituti().subscribe(d => this.istituti = d);
+    this.praticaService.getIstituti().subscribe({
+      next: data => {
+        console.log('data received', data);
+        this.istituti = data;
+        this.loading_3 = false;
+       
+      },
+      error: err => {
+        console.error('request failed', err);
+        this.loading_3 = false;
+      }
+    });
     this.praticaService.getDocenti().subscribe({
       next: data => {
         console.log('data received', data);
         this.docenti = data;
         this.loading_2 = false;
-        this.cdr.markForCheck(); // <- force re-render
       },
       error: err => {
         console.error('request failed', err);

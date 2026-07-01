@@ -42,15 +42,15 @@ def create_myapp():
     dati = request.json
     nuovo_ida = create_id(db.session, applicazione)
     anno_acc = dati["anno_accademico"]
-    istituto_id = dati["istituto"]
+    istituto_id = dati["istituto_id"]
     periodo = dati["periodo"]
-    docente = dati["docente"]
+    docente = dati["docente_id"]
 
     app = applicazione(
         ida=nuovo_ida,
         stato="creato",
         esami=False,
-        transcriptofrecords=False,
+        transcriptofrecords="null",
         idin=istituto_id,
         username_studente=studente_id,
         username_docente=docente,
@@ -63,6 +63,7 @@ def create_myapp():
 
     nuovi_esami = [
         pianoesami(
+            ida=nuovo_ida,
             applicazione_id=dati["applicazione_id"],
             codice_estero=e["codice_estero"],
             titolo_estero=e["titolo_estero"],
@@ -71,11 +72,12 @@ def create_myapp():
             titolo_cafoscari=e["titolo_cafoscari"],
             crediti_cafoscari=e["crediti_cafoscari"],
         )
-        for e in dati["esami"]
+        for e in dati["mapping_esami"]  
     ]
 
     db.session.add_all(nuovi_esami)
     db.session.commit()
+    return jsonify({"ida": app.ida, "id": app.ida}), 201
 
 
 @bp_studente.route("/istituti", methods=["GET"])
