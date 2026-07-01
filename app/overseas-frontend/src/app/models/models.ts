@@ -2,7 +2,7 @@
 // Interfacce TypeScript che rispecchiano le tabelle del database
 
 export interface Utente {
-  id: number;
+  username:string;
   nome: string;
   cognome: string;
   email: string;

@@ -2,29 +2,37 @@ import flask
 import sqlalchemy as sq
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import Integer, String, select
-from app.models import applicazione, institution, studente, learningagreement, docentireferenti, db
+from app.models import (
+    applicazione,
+    institution,
+    studente,
+    learningagreement,
+    docentireferenti,
+    db,
+)
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import jsonify, request, Blueprint, redirect
 from app.models import pianoesami, applicazione, create_id
-
 
 bp_studente = Blueprint(
     "studente",
     __name__,
 )
 
+
 @bp_studente.route("/pratiche", methods=["GET"])
 @jwt_required()
 def get_my_app():
     studente_id = get_jwt_identity()
     query = select(applicazione).where(applicazione.username_studente == studente_id)
-    app = db.session.execute(query).scalars().all() #messo all al posto di first, dato che angular si aspetta una lista
+    app = (
+        db.session.execute(query).scalars().all()
+    )  # messo all al posto di first, dato che angular si aspetta una lista
 
     if not app:
         return jsonify([]), 200
     pratiche_json = [pratica.to_dict() for pratica in app]
     return jsonify(pratiche_json), 200
-
 
 
 @bp_studente.route("/pratiche", methods=["POST"])
@@ -53,8 +61,6 @@ def create_myapp():
     db.session.add(app)
     db.session.flush()
 
-   
-
     nuovi_esami = [
         pianoesami(
             applicazione_id=dati["applicazione_id"],
@@ -68,8 +74,6 @@ def create_myapp():
         for e in dati["esami"]
     ]
 
-
-
     db.session.add_all(nuovi_esami)
     db.session.commit()
 
@@ -81,6 +85,7 @@ def get_my_institution():
     query = select(institution)
     institution_db = db.session.execute(query).scalars().all()
     return jsonify([istituti.to_dict() for istituti in institution_db]), 200
+
 
 @bp_studente.route("/docente", methods=["GET"])
 @jwt_required()

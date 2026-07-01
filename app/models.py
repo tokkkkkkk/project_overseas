@@ -14,11 +14,6 @@ from sqlalchemy import Table, Column, ForeignKey
 
 
 def create_id(session, modello_applicazione):
-    """
-    Cerca l'ultimo ID (es. APP008), lo incrementa e restituisce APP009.
-    Se la tabella è vuota, restituisce APP001.
-    """
-    # Ordiniamo in modo decrescente per prendere il più alto
     query = select(modello_applicazione.ida).order_by(modello_applicazione.ida.desc())
     ultimo_id = session.execute(query).scalars().first()
 
@@ -86,6 +81,14 @@ class docentireferenti(db.Model):
         "applicazione", back_populates="docente_rel"
     )
     utente: Mapped["utenti"] = relationship(back_populates="fk_doc")
+
+    # metodo to_dict
+    def to_dict(self):
+        return {
+            "username": self.username,
+            "nome": self.utente.nome,
+            "cognome": self.utente.cognome,
+        }
 
 
 class ufficiooverseas(db.Model):
@@ -174,7 +177,9 @@ class pianoesami(db.Model):
 class applicazione(db.Model):
     __tablename__ = "applicazione"
 
-    ida: Mapped[str] = mapped_column(primary_key=True,default=lambda: f"APP{str(uuid.uuid4())[:6].upper()}")
+    ida: Mapped[str] = mapped_column(
+        primary_key=True, default=lambda: f"APP{str(uuid.uuid4())[:6].upper()}"
+    )
     stato: Mapped[str] = mapped_column(
         db.Enum(
             "creato",

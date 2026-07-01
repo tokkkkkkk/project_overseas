@@ -1,5 +1,5 @@
 // components/studente/nuova-pratica/nuova-pratica.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -50,12 +50,15 @@ import { IstitutoOspitante, MappingEsame, Utente } from '../../../models/models'
         </div>
         <div class="form-group">
           <label class="form-label">Docente referente</label>
-          <select class="form-control" [(ngModel)]="form.docente_id">
-            <option value="">Seleziona docente...</option>
-            @for (doc of docenti; track doc.id) {
-              <option [value]="doc.id">{{ doc.nome }} {{ doc.cognome }}</option>
-            }
-          </select>
+          @if (loading_2) {
+            <p>Caricamento...</p>
+          }@else {
+            <select class="form-control" [(ngModel)]="form.docente_id">
+              @for (doc of docenti; track doc.username) {
+                <option [value]="doc.username">{{ doc.nome }} {{ doc.cognome }}</option>
+              }
+            </select>
+          }
         </div>
       </div>
       <div class="form-group">
@@ -141,6 +144,7 @@ export class NuovaPraticaComponent implements OnInit {
   fileSelezionato: File | null = null;
   errore = '';
   loading = false;
+  loading_2 = false;
 
   form = {
     anno_accademico: '2025/2026',
@@ -151,11 +155,23 @@ export class NuovaPraticaComponent implements OnInit {
     mapping_esami: [this.nuovoEsame()]
   };
 
-  constructor(private praticaService: PraticaService, private router: Router) {}
+  constructor(private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
+    console.log('ngOnInit fired');
     this.praticaService.getIstituti().subscribe(d => this.istituti = d);
-    this.praticaService.getDocenti().subscribe(d => this.docenti = d);
+    this.praticaService.getDocenti().subscribe({
+      next: data => {
+        console.log('data received', data);
+        this.docenti = data;
+        this.loading_2 = false;
+        this.cdr.markForCheck(); // <- force re-render
+      },
+      error: err => {
+        console.error('request failed', err);
+        this.loading_2 = false;
+      }
+    });
   }
 
   nuovoEsame(): MappingEsame {
