@@ -31,6 +31,26 @@ def create_id(session, modello_applicazione):
     return f"APP{nuovo_numero:03d}"
 
 
+def create_inst_id(session, modello_istituto):
+    # ATTENZIONE: Assumo che la colonna chiave primaria si chiami 'idin' come nei codici precedenti.
+    # Se nel tuo models.py si chiama diversamente (es. 'id'), cambialo in entrambe le occorrenze qui sotto!
+    query = select(modello_istituto.idin).order_by(modello_istituto.idin.desc())
+    ultimo_id = session.execute(query).scalars().first()
+
+    if ultimo_id:
+        # ultimo_id è una stringa tipo "INST01"
+        # Prendiamo tutto dal 4° carattere in poi (cioè "01") e lo facciamo diventare numero intero (1)
+        numero_attuale = int(ultimo_id[4:])
+        nuovo_numero = numero_attuale + 1
+    else:
+        # Se il database è completamente vuoto, partiamo da 1
+        nuovo_numero = 1
+
+    # Formatta il numero con esattamente 2 cifre riempiendo di zeri!
+    # Se nuovo_numero è 7 -> INST07. Se è 15 -> INST15.
+    return f"INST{nuovo_numero:02d}"
+
+
 class Base(DeclarativeBase):
     pass
 

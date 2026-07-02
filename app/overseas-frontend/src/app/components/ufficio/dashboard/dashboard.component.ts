@@ -1,5 +1,5 @@
 // components/ufficio/dashboard/dashboard.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -20,9 +20,9 @@ import { PraticaMobilita } from '../../../models/models';
 
     <div class="cards-grid">
       <div class="metric-card"><div class="metric-label">Totale pratiche</div><div class="metric-value blue">{{ pratiche.length }}</div></div>
-      <div class="metric-card"><div class="metric-label">Da verificare</div><div class="metric-value amber">{{ contaStato('in_attesa_approvazione_la') }}</div></div>
-      <div class="metric-card"><div class="metric-label">In corso</div><div class="metric-value blue">{{ contaStato('mobilita_in_corso') }}</div></div>
-      <div class="metric-card"><div class="metric-label">Chiuse</div><div class="metric-value green">{{ contaStato('chiusa') }}</div></div>
+      <div class="metric-card"><div class="metric-label">Pre partenza da registrare</div><div class="metric-value amber">{{ contaStato('pre-partenza') }}</div></div>
+      <div class="metric-card"><div class="metric-label">In corso</div><div class="metric-value blue">{{ contaStato('in corso') }}</div></div>
+      <div class="metric-card"><div class="metric-label">Chiuse</div><div class="metric-value green">{{ contaStato('completato') }}</div></div>
     </div>
 
     <div class="card">
@@ -31,12 +31,12 @@ import { PraticaMobilita } from '../../../models/models';
         <div style="display:flex;gap:8px">
           <select class="form-control" style="width:auto;font-size:12px" [(ngModel)]="filtroStato">
             <option value="">Tutti gli stati</option>
-            <option value="creata">Creata</option>
-            <option value="in_attesa_approvazione_la">Attesa LA</option>
-            <option value="pre_partenza_completata">Pre-partenza completata</option>
-            <option value="mobilita_in_corso">In corso</option>
-            <option value="in_riconoscimento_esami">Riconoscimento</option>
-            <option value="chiusa">Chiusa</option>
+            <option value="creato">Creata</option>
+            <option value="in attesa">Attesa LA</option>
+            <option value="pre-partenza">Pre-partenza completata</option>
+            <option value="in corso">In corso</option>
+            <option value="viaggioCompletato">Riconoscimento esami</option>
+            <option value="completato">Chiusa</option>
           </select>
           <select class="form-control" style="width:auto;font-size:12px" [(ngModel)]="filtroPaese">
             <option value="">Tutti i paesi</option>
@@ -73,9 +73,9 @@ export class UfficioDashboardComponent implements OnInit {
   filtroStato = '';
   filtroPaese = '';
 
-  constructor(private praticaService: PraticaService) {}
+  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) {}
 
-  ngOnInit() { this.praticaService.getTutteLePratiche().subscribe(d => this.pratiche = d); }
+  ngOnInit() { this.praticaService.getTutteLePratiche().subscribe(d => {this.pratiche = d; this.cdr.detectChanges();});}//refresh automatico per vedere all'apertura della pagina tutte le pratiche
 
   contaStato(stato: string): number { return this.pratiche.filter(p => p.stato === stato).length; }
 

@@ -13,7 +13,7 @@ from app.models import (
 )
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import jsonify, request, Blueprint
-from app.models import utenti, db
+from app.models import utenti, db, create_inst_id
 
 bp_ufficio = Blueprint(
     "ufficio",
@@ -43,7 +43,8 @@ def tutte_le_app():
         lista_pratiche.append(
             {
                 "id": app.ida,
-                "studente": {#strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
+                #strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
+                "studente": {
                     "nome": stud.nome,
                     "cognome": stud.cognome,
                 },
@@ -132,3 +133,29 @@ def chiusura_app(ida):
     db.session.commit()
 
     return jsonify({"msg": "app aggiornata"}), 200
+
+@bp_ufficio.route("/istituti", methods = ["POST"])
+@jwt_required()
+def aggiungi_istituto():
+    username = get_jwt_identity()
+    dati = request.json
+
+    n_idin = create_inst_id(db.session, institution)
+    n_nome = dati["nome"]
+    n_paese = dati["paese"]
+    n_città = dati["città"]
+    n_username_ufficio = username
+
+    istituto = institution(
+        idin = n_idin,
+        nome = n_nome,
+        paese = n_paese,
+        città = n_città,
+        username_ufficio = n_username_ufficio,
+    )
+
+    db.session.add(istituto)
+    db.session.flush()
+
+    db.session.commit()
+

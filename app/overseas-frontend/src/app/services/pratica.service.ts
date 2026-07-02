@@ -89,4 +89,8 @@ export class PraticaService {
   getDocenti(): Observable<Utente[]> {
     return this.http.get<Utente[]>(`${this.apiUrl}/studente/docente`);
   }
+
+  aggiungiIstituo(datiIstituto: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/ufficio/istituti`, datiIstituto);
+  }
 }

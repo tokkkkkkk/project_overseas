@@ -1,5 +1,5 @@
 // components/ufficio/istituti/istituti.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
@@ -55,9 +55,9 @@ export class IstitutiComponent implements OnInit {
   mostraForm = false;
   nuovoIstituto: Partial<IstitutoOspitante> = { nome: '', paese: '', citta: '' };
 
-  constructor(private praticaService: PraticaService) {}
+  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) {}
 
-  ngOnInit() { this.praticaService.getIstituti().subscribe(d => this.istituti = d); }
+  ngOnInit() { this.praticaService.getIstituti().subscribe(d => {this.istituti = d; this.cdr.detectChanges();});}
 
   salvaIstituto() {
     // Nota: implementa l'endpoint POST /api/istituti nel backend per completare questa funzione
