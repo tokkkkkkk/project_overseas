@@ -18,7 +18,7 @@ export class PraticaService {
   }
 
   getTutteLePratiche(): Observable<PraticaMobilita[]> {
-    return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/pratiche/tutte`);
+    return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/ufficio/app/tutte`);
   }
 
   getPraticaById(id: number): Observable<PraticaMobilita> {
