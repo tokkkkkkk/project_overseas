@@ -25,9 +25,8 @@ bp_studente = Blueprint(
 def get_my_app():
     studente_id = get_jwt_identity()
     query = select(applicazione).where(applicazione.username_studente == studente_id)
-    app = (
-        db.session.execute(query).scalars().all()
-    )  # messo all al posto di first, dato che angular si aspetta una lista
+    app = db.session.execute(query).scalars().all()
+    # messo all al posto di first, dato che angular si aspetta una lista
 
     if not app:
         return jsonify([]), 200
@@ -45,7 +44,9 @@ def create_myapp():
     istituto_id = dati["istituto_id"]
     periodo = dati["periodo"]
     docente = dati["docente_id"]
-
+    
+    print("ssss",dati)
+    
     app = applicazione(
         ida=nuovo_ida,
         stato="creato",
@@ -64,15 +65,14 @@ def create_myapp():
     nuovi_esami = [
         pianoesami(
             ida=nuovo_ida,
-            applicazione_id=dati["applicazione_id"],
-            codice_estero=e["codice_estero"],
-            titolo_estero=e["titolo_estero"],
-            crediti_estero=e["crediti_estero"],
-            codice_cafoscari=e["codice_cafoscari"],
-            titolo_cafoscari=e["titolo_cafoscari"],
-            crediti_cafoscari=e["crediti_cafoscari"],
+            codiceinsegnamentoestero=e["codice_estero"],
+            titoloinsegnamentoestero=e["titolo_estero"],
+            creditiinsegnamentoestero=e["crediti_estero"],
+            codiceinsegnamentocafoscari=e["codice_cafoscari"],
+            titoloinsegnamentocafoscari=e["titolo_cafoscari"],
+            creditiinsegnamentocafoscari=e["crediti_cafoscari"],
         )
-        for e in dati["mapping_esami"]  
+        for e in dati["mapping_esami"]
     ]
 
     db.session.add_all(nuovi_esami)

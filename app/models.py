@@ -162,7 +162,7 @@ class learningagreement(db.Model):
 class pianoesami(db.Model):
     __tablename__ = "pianoesami"
 
-    idpa: Mapped[int] = mapped_column(primary_key=True)
+    idpe: Mapped[int] = mapped_column(primary_key=True)
     codiceinsegnamentoestero: Mapped[str] = mapped_column(nullable=False)
     titoloinsegnamentoestero: Mapped[str] = mapped_column(nullable=False)
     creditiinsegnamentoestero: Mapped[int] = mapped_column(nullable=False)
@@ -171,7 +171,7 @@ class pianoesami(db.Model):
     creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
 
-    idapp: Mapped[str] = relationship("applicazione", back_populates="idpe")
+    idapp: Mapped["applicazione"] = relationship("applicazione", back_populates="idpe")
 
 
 class applicazione(db.Model):
@@ -197,7 +197,7 @@ class applicazione(db.Model):
     datapartenza: Mapped[date] = mapped_column(nullable=True)
     esami: Mapped[bool] = mapped_column(nullable=True)
     transcriptofrecords: Mapped[str] = mapped_column(db.Enum("caricato", "null"))
-    anno_accademico: Mapped[date] = mapped_column(nullable=True)
+    anno_accademico: Mapped[str] = mapped_column(nullable=True)
     periodo_previsto: Mapped[str]
     idin: Mapped[str] = mapped_column(ForeignKey("institution.idin"))
     username_studente: Mapped[str] = mapped_column(ForeignKey("studente.username"))
@@ -259,7 +259,8 @@ class institution(db.Model):
     studente_view: Mapped[list["studente"]] = relationship(
         "studente", secondary=vede_institution, back_populates="istituti"
     )
-     # metodo to_dict
+
+    # metodo to_dict
     def to_dict(self):
         return {
             "idin": self.idin,

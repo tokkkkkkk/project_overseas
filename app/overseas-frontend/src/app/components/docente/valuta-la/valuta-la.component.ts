@@ -37,7 +37,7 @@ import { PraticaMobilita } from '../../../models/models';
         </div>
         @for (esame of pratica.mapping_esami; track esame.id) {
           <div class="mapping-row">
-            <div class="mapping-cell">{{ esame.codice_estero }} — {{ esame.titolo_estero }} — {{ esame.crediti_esteri }} CFU</div>
+            <div class="mapping-cell">{{ esame.codice_estero }} — {{ esame.titolo_estero }} — {{ esame.crediti_estero }} CFU</div>
             <div class="mapping-arrow">⇄</div>
             <div class="mapping-cell">{{ esame.codice_cafoscari }} — {{ esame.titolo_cafoscari }} — {{ esame.crediti_cafoscari }} CFU</div>
           </div>

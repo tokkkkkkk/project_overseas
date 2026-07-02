@@ -20,7 +20,7 @@ export interface MappingEsame {
   id?: number;
   codice_estero: string;
   titolo_estero: string;
-  crediti_esteri: number;
+  crediti_estero: number;
   codice_cafoscari: string;
   titolo_cafoscari: string;
   crediti_cafoscari: number;

@@ -93,7 +93,7 @@ import { PraticaMobilita } from '../../../models/models';
                 <tr>
                   <td>{{ esame.codice_estero }}</td>
                   <td>{{ esame.titolo_estero }}</td>
-                  <td>{{ esame.crediti_esteri }}</td>
+                  <td>{{ esame.crediti_estero }}</td>
                   <td>{{ esame.codice_cafoscari }}</td>
                   <td>{{ esame.titolo_cafoscari }}</td>
                   <td>{{ esame.crediti_cafoscari }}</td>

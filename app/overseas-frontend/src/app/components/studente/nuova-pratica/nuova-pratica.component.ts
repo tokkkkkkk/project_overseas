@@ -1,5 +1,5 @@
 // components/studente/nuova-pratica/nuova-pratica.component.ts
-import { Component, OnInit,  } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -60,6 +60,7 @@ import { IstitutoOspitante, MappingEsame, Utente } from '../../../models/models'
             <p>Caricamento...</p>
           }@else {
             <select class="form-control" [(ngModel)]="form.docente_id">
+            <option value="" disabled>Seleziona docente...</option>
               @for (doc of docenti; track doc.username) {
                 <option [value]="doc.username">{{ doc.nome }} {{ doc.cognome }}</option>
               }
@@ -91,7 +92,7 @@ import { IstitutoOspitante, MappingEsame, Utente } from '../../../models/models'
           <div class="mapping-cell">
             <input [(ngModel)]="esame.codice_estero" placeholder="Codice" class="mini-input" />
             <input [(ngModel)]="esame.titolo_estero" placeholder="Titolo corso" class="mini-input" />
-            <input [(ngModel)]="esame.crediti_esteri" placeholder="CFU" type="number" class="mini-input mini-cfu" />
+            <input [(ngModel)]="esame.crediti_estero" placeholder="CFU" type="number" class="mini-input mini-cfu" />
           </div>
           <div class="mapping-arrow">⇄</div>
           <div class="mapping-cell">
@@ -163,7 +164,7 @@ export class NuovaPraticaComponent implements OnInit {
     mapping_esami: [this.nuovoEsame()]
   };
 
-  constructor(private praticaService: PraticaService, private router: Router) { }
+  constructor(private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     console.log('ngOnInit fired');
@@ -172,7 +173,6 @@ export class NuovaPraticaComponent implements OnInit {
         console.log('data received', data);
         this.istituti = data;
         this.loading_3 = false;
-       
       },
       error: err => {
         console.error('request failed', err);
@@ -184,6 +184,7 @@ export class NuovaPraticaComponent implements OnInit {
         console.log('data received', data);
         this.docenti = data;
         this.loading_2 = false;
+        this.cdr.markForCheck();
       },
       error: err => {
         console.error('request failed', err);
@@ -193,7 +194,7 @@ export class NuovaPraticaComponent implements OnInit {
   }
 
   nuovoEsame(): MappingEsame {
-    return { codice_estero: '', titolo_estero: '', crediti_esteri: 0, codice_cafoscari: '', titolo_cafoscari: '', crediti_cafoscari: 0 };
+    return { codice_estero: '', titolo_estero: '', crediti_estero: 0, codice_cafoscari: '', titolo_cafoscari: '', crediti_cafoscari: 0 };
   }
 
   aggiungiEsame() { this.form.mapping_esami.push(this.nuovoEsame()); }

@@ -9,11 +9,11 @@ export class PraticaService {
 
   private apiUrl = 'http://localhost:5000/api';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // ---- PRATICHE ----
 
- getMiePratiche(): Observable<PraticaMobilita[]> {
+  getMiePratiche(): Observable<PraticaMobilita[]> {
     return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/studente/pratiche`);
   }
 
@@ -33,7 +33,7 @@ export class PraticaService {
     note?: string;
     mapping_esami: MappingEsame[];
   }): Observable<PraticaMobilita> {
-    return this.http.post<PraticaMobilita>(`${this.apiUrl}/pratiche`, dati);
+    return this.http.post<PraticaMobilita>(`${this.apiUrl}/studente/pratiche`, dati);
   }
 
   aggiornaPratica(id: number, dati: Partial<PraticaMobilita>): Observable<PraticaMobilita> {
