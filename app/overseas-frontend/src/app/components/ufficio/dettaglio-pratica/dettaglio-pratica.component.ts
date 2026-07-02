@@ -13,7 +13,7 @@ import { PraticaMobilita } from '../../../models/models';
     @if (pratica) {
       <div class="page-header">
         <div>
-          <h1 class="page-title">Pratica #{{ pratica.id }} — {{ pratica.istituto.nome }}</h1>
+          <h1 class="page-title">Pratica #{{ pratica.ida }} — {{ pratica.istituto.nome }}</h1>
           <p class="page-sub">Studente: {{ pratica.studente.nome }} {{ pratica.studente.cognome }} · Docente: {{ pratica.docente.nome }} {{ pratica.docente.cognome }}</p>
         </div>
         <span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span>
@@ -133,7 +133,7 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
 
   completaPrePartenza() {
     if (!this.pratica) return;
-    this.praticaService.completaPrePartenza(this.pratica.id).subscribe(() => {
+    this.praticaService.completaPrePartenza(this.pratica.ida).subscribe(() => {
       this.messaggio = 'Fase pre-partenza completata!';
       setTimeout(() => this.router.navigate(['/ufficio/dashboard']), 1500);
     });
@@ -141,7 +141,7 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
 
   chiudiPratica() {
     if (!this.pratica) return;
-    this.praticaService.chiudiPratica(this.pratica.id).subscribe(() => {
+    this.praticaService.chiudiPratica(this.pratica.ida).subscribe(() => {
       this.messaggio = 'Pratica chiusa con successo!';
       setTimeout(() => this.router.navigate(['/ufficio/dashboard']), 1500);
     });

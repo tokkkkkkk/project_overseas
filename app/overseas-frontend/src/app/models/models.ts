@@ -54,7 +54,7 @@ export type StatoPratica =
   | 'chiusa';
 
 export interface PraticaMobilita {
-  id: number;
+  ida: string;
   anno_accademico: string;
   periodo: string;
   note?: string;

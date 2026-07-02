@@ -30,7 +30,7 @@ import { PraticaMobilita } from '../../../models/models';
         <table>
           <thead><tr><th>Studente</th><th>Istituto</th><th>Periodo</th><th>LA caricato il</th><th>Azioni</th></tr></thead>
           <tbody>
-            @for (p of laInAttesa; track p.id) {
+            @for (p of laInAttesa; track p.ida) {
               <tr>
                 <td>{{ p.studente.nome }} {{ p.studente.cognome }}</td>
                 <td>{{ p.istituto.nome }}</td>
@@ -38,7 +38,7 @@ import { PraticaMobilita } from '../../../models/models';
                 <td>{{ getUltimoLa(p)?.data_caricamento | date:'dd/MM/yyyy' }}</td>
                 <td style="display:flex;gap:6px">
                   <a [href]="'/api/files/' + getUltimoLa(p)?.filename" class="btn btn-sm" download>📄 Vedi LA</a>
-                  <a [routerLink]="['/docente/valuta-la', p.id]" class="btn btn-sm btn-success">✓ Valuta</a>
+                  <a [routerLink]="['/docente/valuta-la', p.ida]" class="btn btn-sm btn-success">✓ Valuta</a>
                 </td>
               </tr>
             }
@@ -54,12 +54,12 @@ import { PraticaMobilita } from '../../../models/models';
         <table>
           <thead><tr><th>Studente</th><th>Istituto</th><th>N° esami</th><th>Azioni</th></tr></thead>
           <tbody>
-            @for (p of esamiInAttesa; track p.id) {
+            @for (p of esamiInAttesa; track p.ida) {
               <tr>
                 <td>{{ p.studente.nome }} {{ p.studente.cognome }}</td>
                 <td>{{ p.istituto.nome }}</td>
                 <td>{{ p.mapping_esami.length }} esami</td>
-                <td><a [routerLink]="['/docente/riconosci-esami', p.id]" class="btn btn-sm btn-success">🎓 Riconosci esami</a></td>
+                <td><a [routerLink]="['/docente/riconosci-esami', p.ida]" class="btn btn-sm btn-success">🎓 Riconosci esami</a></td>
               </tr>
             }
           </tbody>
@@ -73,7 +73,7 @@ import { PraticaMobilita } from '../../../models/models';
       <table>
         <thead><tr><th>Studente</th><th>Istituto</th><th>Periodo</th><th>Stato</th></tr></thead>
         <tbody>
-          @for (p of pratiche; track p.id) {
+          @for (p of pratiche; track p.ida) {
             <tr>
               <td>{{ p.studente.nome }} {{ p.studente.cognome }}</td>
               <td>{{ p.istituto.nome }}</td>

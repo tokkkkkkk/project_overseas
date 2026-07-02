@@ -51,7 +51,7 @@ import { PraticaMobilita } from '../../../models/models';
         <table>
           <thead><tr><th>Studente</th><th>Istituto</th><th>Paese</th><th>Periodo</th><th>Docente ref.</th><th>Stato</th><th>Azioni</th></tr></thead>
           <tbody>
-            @for (p of praticheFiltrate(); track p.id) {
+            @for (p of praticheFiltrate(); track p.ida) {
               <tr>
                 <td>{{ p.studente.nome }} {{ p.studente.cognome }}</td>
                 <td>{{ p.istituto.nome }}</td>
@@ -59,7 +59,7 @@ import { PraticaMobilita } from '../../../models/models';
                 <td>{{ p.periodo }}</td>
                 <td>{{ p.docente.nome }} {{ p.docente.cognome }}</td>
                 <td><span [class]="'badge ' + getBadgeClass(p.stato)">{{ getStatoLabel(p.stato) }}</span></td>
-                <td><a [routerLink]="['/ufficio/pratica', p.id]" class="btn btn-sm">👁 Dettaglio</a></td>
+                <td><a [routerLink]="['/ufficio/pratica', p.ida]" class="btn btn-sm">👁 Dettaglio</a></td>
               </tr>
             }
           </tbody>

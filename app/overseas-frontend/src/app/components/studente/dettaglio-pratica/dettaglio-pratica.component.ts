@@ -14,7 +14,7 @@ import { PraticaMobilita } from '../../../models/models';
     @if (pratica) {
       <div class="page-header">
         <div>
-          <h1 class="page-title">Pratica #{{ pratica.id }} — {{ pratica.istituto.nome }}</h1>
+          <h1 class="page-title">Pratica #{{ pratica.ida }} — {{ pratica.istituto.nome }}</h1>
           <p class="page-sub">{{ pratica.anno_accademico }} · {{ pratica.periodo }} · Docente: {{ pratica.docente.nome }} {{ pratica.docente.cognome }}</p>
         </div>
         <span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span>
@@ -192,9 +192,9 @@ export class DettaglioPraticaComponent implements OnInit {
     { key: 'chiusa', label: 'Chiusa' }
   ];
 
-  statiOrder = ['creata','in_attesa_approvazione_la','pre_partenza_completata','mobilita_in_corso','in_riconoscimento_esami','chiusa'];
+  statiOrder = ['creata', 'in_attesa_approvazione_la', 'pre_partenza_completata', 'mobilita_in_corso', 'in_riconoscimento_esami', 'chiusa'];
 
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService) {}
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService) { }
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -216,7 +216,7 @@ export class DettaglioPraticaComponent implements OnInit {
 
   salvaDates() {
     if (!this.pratica) return;
-    this.praticaService.aggiornaPratica(this.pratica.id, { data_arrivo: this.dataArrivo, data_partenza: this.dataPartenza }).subscribe();
+    this.praticaService.aggiornaPratica(this.pratica.ida, { data_arrivo: this.dataArrivo, data_partenza: this.dataPartenza }).subscribe();
   }
 
   onTranscriptSelected(e: Event) {
@@ -226,7 +226,7 @@ export class DettaglioPraticaComponent implements OnInit {
 
   caricaTranscript() {
     if (!this.pratica || !this.transcriptFile) return;
-    this.praticaService.caricaTranscript(this.pratica.id, this.transcriptFile).subscribe(() => window.location.reload());
+    this.praticaService.caricaTranscript(this.pratica.ida, this.transcriptFile).subscribe(() => window.location.reload());
   }
 
   onNuovoLaSelected(e: Event) {
@@ -236,21 +236,21 @@ export class DettaglioPraticaComponent implements OnInit {
 
   caricaNuovoLa() {
     if (!this.pratica || !this.nuovoLaFile) return;
-    this.praticaService.caricaLearningAgreement(this.pratica.id, this.nuovoLaFile).subscribe(() => window.location.reload());
+    this.praticaService.caricaLearningAgreement(this.pratica.ida, this.nuovoLaFile).subscribe(() => window.location.reload());
   }
 
   salvaVoti() {
     if (!this.pratica) return;
-    this.praticaService.aggiornaVotiEsami(this.pratica.id, this.pratica.mapping_esami).subscribe();
+    this.praticaService.aggiornaVotiEsami(this.pratica.ida, this.pratica.mapping_esami).subscribe();
   }
 
   getBadgeClass(stato: string): string {
-    const map: Record<string, string> = { 'creata':'badge-created','in_attesa_approvazione_la':'badge-waiting','pre_partenza_completata':'badge-approved','mobilita_in_corso':'badge-progress','in_riconoscimento_esami':'badge-waiting','chiusa':'badge-closed' };
+    const map: Record<string, string> = { 'creata': 'badge-created', 'in_attesa_approvazione_la': 'badge-waiting', 'pre_partenza_completata': 'badge-approved', 'mobilita_in_corso': 'badge-progress', 'in_riconoscimento_esami': 'badge-waiting', 'chiusa': 'badge-closed' };
     return map[stato] ?? 'badge-created';
   }
 
   getStatoLabel(stato: string): string {
-    const map: Record<string, string> = { 'creata':'Creata','in_attesa_approvazione_la':'Attesa LA','pre_partenza_completata':'Pre-partenza ok','mobilita_in_corso':'In corso','in_riconoscimento_esami':'In riconoscimento','chiusa':'Chiusa' };
+    const map: Record<string, string> = { 'creata': 'Creata', 'in_attesa_approvazione_la': 'Attesa LA', 'pre_partenza_completata': 'Pre-partenza ok', 'mobilita_in_corso': 'In corso', 'in_riconoscimento_esami': 'In riconoscimento', 'chiusa': 'Chiusa' };
     return map[stato] ?? stato;
   }
 

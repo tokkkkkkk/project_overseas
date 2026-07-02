@@ -217,7 +217,7 @@ export class NuovaPraticaComponent implements OnInit {
     this.praticaService.creaPratica(this.form).subscribe({
       next: (pratica) => {
         if (this.fileSelezionato) {
-          this.praticaService.caricaLearningAgreement(pratica.id, this.fileSelezionato).subscribe({
+          this.praticaService.caricaLearningAgreement(pratica.ida, this.fileSelezionato).subscribe({
             next: () => this.router.navigate(['/studente/dashboard']),
             error: () => this.router.navigate(['/studente/dashboard'])
           });

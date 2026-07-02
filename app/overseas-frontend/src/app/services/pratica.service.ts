@@ -36,13 +36,13 @@ export class PraticaService {
     return this.http.post<PraticaMobilita>(`${this.apiUrl}/studente/pratiche`, dati);
   }
 
-  aggiornaPratica(id: number, dati: Partial<PraticaMobilita>): Observable<PraticaMobilita> {
+  aggiornaPratica(id: string, dati: Partial<PraticaMobilita>): Observable<PraticaMobilita> {
     return this.http.put<PraticaMobilita>(`${this.apiUrl}/pratiche/${id}`, dati);
   }
 
   // ---- LEARNING AGREEMENT ----
 
-  caricaLearningAgreement(praticaId: number, file: File): Observable<any> {
+  caricaLearningAgreement(praticaId: string, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post(`${this.apiUrl}/pratiche/${praticaId}/learning-agreement`, formData);
@@ -54,7 +54,7 @@ export class PraticaService {
 
   // ---- TRANSCRIPT ----
 
-  caricaTranscript(praticaId: number, file: File): Observable<any> {
+  caricaTranscript(praticaId: string, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
     return this.http.post(`${this.apiUrl}/pratiche/${praticaId}/transcript`, formData);
@@ -62,7 +62,7 @@ export class PraticaService {
 
   // ---- ESAMI ----
 
-  aggiornaVotiEsami(praticaId: number, esami: MappingEsame[]): Observable<any> {
+  aggiornaVotiEsami(praticaId: string, esami: MappingEsame[]): Observable<any> {
     return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/esami`, { esami });
   }
 
@@ -72,11 +72,11 @@ export class PraticaService {
 
   // ---- UFFICIO ----
 
-  completaPrePartenza(praticaId: number): Observable<any> {
+  completaPrePartenza(praticaId: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/pre-partenza`, {});
   }
 
-  chiudiPratica(praticaId: number): Observable<any> {
+  chiudiPratica(praticaId: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/chiudi`, {});
   }
 

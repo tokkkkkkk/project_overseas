@@ -1,5 +1,5 @@
 // components/studente/dashboard/dashboard.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
@@ -55,7 +55,7 @@ import { PraticaMobilita } from '../../../models/models';
               </tr>
             </thead>
             <tbody>
-              @for (pratica of pratiche; track pratica.id) {
+              @for (pratica of pratiche; track pratica.ida) {
                 <tr>
                   <td>{{ pratica.anno_accademico }}</td>
                   <td>{{ pratica.istituto.nome }}</td>
@@ -63,7 +63,7 @@ import { PraticaMobilita } from '../../../models/models';
                   <td>{{ pratica.periodo }}</td>
                   <td><span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span></td>
                   <td>
-                    <a [routerLink]="['/studente/pratica', pratica.id]" class="btn btn-sm">Dettaglio</a>
+                    <a [routerLink]="['/studente/pratica', pratica.ida]" class="btn btn-sm">Dettaglio</a>
                   </td>
                 </tr>
               }
@@ -79,11 +79,17 @@ export class StudenteDashboardComponent implements OnInit {
   pratiche: PraticaMobilita[] = [];
   loading = true;
 
-  constructor(private praticaService: PraticaService) {}
+  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.praticaService.getMiePratiche().subscribe({
-     next: (data: PraticaMobilita[]) => { this.pratiche = data; this.loading = false; },
+      next: (data: PraticaMobilita[]) => {
+        console.log('got data', data);
+        this.pratiche = data;
+        this.loading = false;
+        console.log('loading is now', this.loading, 'pratiche count', this.pratiche.length);
+        this.cdr.detectChanges(); // force it
+      },
       error: () => { this.loading = false; }
     });
   }
