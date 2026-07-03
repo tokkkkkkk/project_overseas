@@ -51,7 +51,7 @@ import { PraticaMobilita } from '../../../models/models';
           <table>
             <thead>
               <tr>
-                <th>Anno Acc.</th><th>Istituto</th><th>Paese</th><th>Periodo</th><th>Stato</th><th>Azioni</th>
+                <th>Anno Acc.</th><th>Istituto</th><th>Paese</th><th>Periodo</th><th>Stato</th><th>Docente</th><th>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -61,6 +61,7 @@ import { PraticaMobilita } from '../../../models/models';
                   <td>{{ pratica.istituto.nome }}</td>
                   <td>{{ pratica.istituto.paese }}</td>
                   <td>{{ pratica.periodo }}</td>
+                  <td>{{ pratica.docente.nome + ' ' + pratica.docente.cognome }}</td>
                   <td><span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span></td>
                   <td>
                     <a [routerLink]="['/studente/pratica', pratica.ida]" class="btn btn-sm">Dettaglio</a>
