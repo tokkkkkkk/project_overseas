@@ -1,5 +1,5 @@
 // components/docente/valuta-la/valuta-la.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -30,12 +30,14 @@ import { PraticaMobilita } from '../../../models/models';
       </div>
 
       <!-- Mapping esami -->
+      @if (pratica) {
       <div class="card">
         <div class="card-title">Mapping esami proposto</div>
         <div class="mapping-header">
           <span>Esame estero (OC)</span><span></span><span>Esame Ca' Foscari (EC)</span>
         </div>
-        @for (esame of pratica.mapping_esami; track esame.id) {
+        
+        @for (esame of pratica.pianoesami; track esame.id) {
           <div class="mapping-row">
             <div class="mapping-cell">{{ esame.codice_estero }} — {{ esame.titolo_estero }} — {{ esame.crediti_estero }} CFU</div>
             <div class="mapping-arrow">⇄</div>
@@ -43,6 +45,9 @@ import { PraticaMobilita } from '../../../models/models';
           </div>
         }
       </div>
+      } @else {
+        <p class="text-muted">Caricamento mapping esami...</p>
+      }
 
       <!-- Decisione -->
       <div class="card">
@@ -80,14 +85,21 @@ export class ValutaLaComponent implements OnInit {
   mostraRifiuto = false;
   motivazione = '';
   messaggio = '';
+  ida: string = "";
 
   get ultimoLa() { return this.pratica?.learning_agreements.at(-1); }
 
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router) {}
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.praticaService.getPraticaById(id).subscribe(p => this.pratica = p);
+    this.ida = this.route.snapshot.paramMap.get('id')!;
+
+    console.log("Stai valutando la pratica:", this.ida);
+    this.praticaService.getPraticaDocenteById(this.ida).subscribe(p => {
+      this.pratica = p;
+      console.log(this.pratica);
+      this.cdr.detectChanges();
+    });
   }
 
   approva() {

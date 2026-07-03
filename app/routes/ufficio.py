@@ -10,6 +10,7 @@ from app.models import (
     docentireferenti,
     institution,
     utenti,
+    pianoesami,
 )
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import jsonify, request, Blueprint
@@ -42,7 +43,7 @@ def tutte_le_app():
     for app, ist, stud, doc in pratiche:
         lista_pratiche.append(
             {
-                "id": app.ida,
+                "ida": app.ida,
                 # strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
                 "studente": {
                     "nome": stud.nome,
@@ -64,45 +65,92 @@ def tutte_le_app():
     return jsonify(lista_pratiche), 200
 
 
-@bp_ufficio.route("/app/<string:id_pratica>", methods=["GET"])
+@bp_ufficio.route("/pratiche/<id_pratica>", methods=["GET"])
 @jwt_required()
 def dettaglio_pratica(id_pratica):
 
     query = (
-        select(applicazione, institution, studente, docente)
-        .join(institution, applicazione.idin == institution.idin)
-        .join(studente, applicazione.username_studente == studente.username)
-        .join(docente, applicazione.username_docente == docente.username)
+        select(applicazione, institution, pianoesami, studente, docente)
+        .outerjoin(institution, applicazione.idin == institution.idin)
+        .outerjoin(pianoesami, applicazione.ida == pianoesami.ida)
+        .outerjoin(studente, applicazione.username_studente == studente.username)
+        .outerjoin(docente, applicazione.username_docente == docente.username)
         .where(applicazione.ida == id_pratica)
     )
 
-    risultato = db.session.execute(query).first()
+    risultati = db.session.execute(query).all()
 
-    if not risultato:
+    if not risultati:
         return jsonify({"error": "Pratica non trovata"}), 404
 
-    app, ist, stud, doc = risultato
+    app = risultati[0][0]
+    ist = risultati[0][1]
+    stud = risultati[0][3]
+    doc = risultati[0][4]
+
+    # 3. Estrai l'elenco di TUTTI gli esami da TUTTE le righe
+    # riga[2] corrisponde a 'pianoesami' nel tuo select(...) originale
+    tutti_gli_esami = [row[2] for row in risultati]
 
     dettaglio = {
-        "id": app.ida,
+        "ida": app.ida,
         "stato": app.stato,
         "periodo": app.periodo_previsto,
         "istituto": {
-            "nome": ist.nome,
-            "paese": ist.paese,
+            "nome": ist.nome if ist else "Nessun istituto",
+            "paese": ist.paese if ist else "-",
         },
         "studente": {
-            "nome": stud.nome,
-            "cognome": stud.cognome,
-            "username": stud.username,
+            "nome": stud.nome if stud else "Sconosciuto",
+            "cognome": stud.cognome if stud else "",
+            "username": stud.username if stud else "",
         },
         "docente": {
-            "nome": doc.nome,
-            "cognome": doc.cognome,
+            "nome": doc.nome if doc else "Nessun",
+            "cognome": doc.cognome if doc else "docente",
         },
+        "pianoesami": [
+            {
+                # Cambia le chiavi (a sinistra) per farle combaciare ESATTAMENTE con l'HTML
+                "id": e.idpe,  # Risolve il crash del "track esame.id"
+                "codice_estero": e.codiceinsegnamentoestero,
+                "titolo_estero": e.titoloinsegnamentoestero,
+                "crediti_estero": e.creditiinsegnamentoestero,
+                "codice_cafoscari": e.codiceinsegnamentocafoscari,
+                "titolo_cafoscari": e.titoloinsegnamentocafoscari,
+                "crediti_cafoscari": e.creditiinsegnamentocafoscari,
+                "voto_ottenuto": getattr(e, "voto_ottenuto", None),
+                "data_superamento": getattr(e, "data_superamento", None),
+                "stato_riconoscimento": getattr(e, "stato_riconoscimento", "in_attesa"),
+            }
+            for e in tutti_gli_esami if e is not None
+        ],
     }
-
+    print(dettaglio)
     return jsonify(dettaglio), 200
+
+
+@bp_ufficio.route("/pratiche/<string:id_pratica>/stato", methods=["PUT"])
+@jwt_required()
+def verifica_app(id_pratica):
+    dati = request.json
+    statoAgg = dati["stato"]
+
+    if not statoAgg:
+        return jsonify({"msg": "campo mancante"}), 400
+    
+    query = select(applicazione).where(applicazione.ida == id_pratica)
+    app = db.session.execute(query).scalars().first()
+
+    if not app:
+        return jsonify({"msg": "applicazione non trovata"}), 400
+    
+    app.stato = statoAgg
+    db.session.commit()
+
+    return jsonify({"msg": "Stato aggiornato con successo!", "nuovo_stato": app.stato}), 200
+
+
 
 
 @bp_ufficio.route("/app/da-approvare", methods=["GET"])
@@ -114,29 +162,6 @@ def app_da_verificare():
     pratiche = db.session.execute(query).scalars().all()
 
     return jsonify([p.to_dict() for p in pratiche])
-
-
-@bp_ufficio.route("/app/<string:ida>/approvazione", methods=["PATCH"])
-@jwt_required()
-def verifica_app(ida):
-    dati = request.json
-    statoAgg = dati.get("stato")
-
-    if not statoAgg:
-        return jsonify({"msg": "campo stato mancante"}), 400
-
-    query = select(applicazione).where(applicazione.ida == ida)
-    app = db.session.execute(query).scalars().first()
-    if not app:
-        return jsonify({"msg": "applicazione non trovata"}), 404
-
-    if app.stato != "pre-partenza":
-        return jsonify({"msg": "stato non valido per l'operazione"})
-
-    app.stato = statoAgg
-    db.session.commit()
-
-    return jsonify({"msg": "app aggiornata"}), 200
 
 
 @bp_ufficio.route("/app/da-chiudere", methods=["GET"])

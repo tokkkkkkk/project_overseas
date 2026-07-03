@@ -1,6 +1,7 @@
 // components/ufficio/dettaglio-pratica/dettaglio-pratica.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
 import { PraticaMobilita } from '../../../models/models';
@@ -8,7 +9,7 @@ import { PraticaMobilita } from '../../../models/models';
 @Component({
   selector: 'app-ufficio-dettaglio-pratica',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     @if (pratica) {
       <div class="page-header">
@@ -30,7 +31,7 @@ import { PraticaMobilita } from '../../../models/models';
       </div>
 
       <!-- Verifica pre-partenza -->
-      @if (pratica.stato === 'in_attesa_approvazione_la' && ultimoLaApprovato()) {
+      @if (pratica.stato === 'in attesa' && ultimoLaApprovato()) {
         <div class="alert-info">
           Il Learning Agreement è stato approvato dal docente. Puoi verificare e completare la fase pre-partenza.
         </div>
@@ -40,14 +41,31 @@ import { PraticaMobilita } from '../../../models/models';
         </div>
       }
 
+      <!-- modifica stato -->
+      <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #1a3a6b;">
+        <div class="card-title" style="margin-bottom: 10px; font-weight: bold;">Modifica Stato</div>
+        <div style="display: flex; gap: 15px; align-items: center;">
+          
+          <select class="form-control" [(ngModel)]="nuovoStato" style="max-width: 250px; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            @for (stato of statiOrder; track stato) {
+              <option [value]="stato">{{ getStatoLabel(stato) }}</option>
+            }
+          </select>
+          
+          <button class="btn btn-primary" (click)="salvaNuovoStato()">
+            ✏️ Aggiorna Stato
+          </button>
+        </div>
+      </div>
+
       <!-- Esami riconosciuti -->
-      @if (pratica.mapping_esami.length > 0) {
+      @if (pratica.pianoesami.length > 0) {
         <div class="card">
           <div class="card-title">Esami</div>
           <table>
             <thead><tr><th>Esame estero</th><th>Esame Ca' Foscari</th><th>Voto</th><th>Stato</th></tr></thead>
             <tbody>
-              @for (esame of pratica.mapping_esami; track esame.id) {
+              @for (esame of pratica.pianoesami; track esame.id) {
                 <tr>
                   <td>{{ esame.codice_estero }} — {{ esame.titolo_estero }}</td>
                   <td>{{ esame.codice_cafoscari }} — {{ esame.titolo_cafoscari }}</td>
@@ -61,7 +79,7 @@ import { PraticaMobilita } from '../../../models/models';
       }
 
       <!-- Chiusura pratica -->
-      @if (pratica.stato === 'in_riconoscimento_esami' && tuttiEsamiApprovati() && pratica.transcript) {
+      @if (pratica.stato === 'viaggioCompletato' && tuttiEsamiApprovati() && pratica.transcript) {
         <div class="alert-success">
           Transcript of Records caricato e tutti gli esami approvati dal docente. La pratica può essere chiusa.
         </div>
@@ -93,23 +111,29 @@ import { PraticaMobilita } from '../../../models/models';
 export class UfficioDettaglioPraticaComponent implements OnInit {
   pratica: PraticaMobilita | null = null;
   messaggio = '';
+  nuovoStato = '';
 
   steps = [
-    { key: 'creata', label: 'Creata' },
-    { key: 'in_attesa_approvazione_la', label: 'LA approvato' },
-    { key: 'pre_partenza_completata', label: 'Pre-partenza' },
-    { key: 'mobilita_in_corso', label: 'In corso' },
-    { key: 'in_riconoscimento_esami', label: 'Riconoscimento' },
-    { key: 'chiusa', label: 'Chiusa' }
+    { key: 'creato', label: 'Creata' },
+    { key: 'in attesa', label: 'LA approvato' },
+    { key: 'pre-partenza', label: 'Pre-partenza' },
+    { key: 'in corso', label: 'In corso' },
+    { key: 'viaggioCompletato', label: 'Riconoscimento' },
+    { key: 'completato', label: 'Chiusa' }
   ];
 
-  statiOrder = ['creata','in_attesa_approvazione_la','pre_partenza_completata','mobilita_in_corso','in_riconoscimento_esami','chiusa'];
+  statiOrder = ['creato', 'in attesa', 'pre-partenza', 'in corso', 'completato', 'annullato', 'viaggioCompletato'];
 
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router) {}
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.praticaService.getPraticaById(id).subscribe(p => this.pratica = p);
+    const id = String(this.route.snapshot.paramMap.get('id'));
+    this.praticaService.getPraticaUfficioById(id).subscribe(p => {
+      this.pratica = p;
+      this.nuovoStato = p.stato;
+      console.log(this.pratica);
+      this.cdr.detectChanges();
+    });
   }
 
   getStepClass(key: string): string {
@@ -122,13 +146,18 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
   }
 
   ultimoLaApprovato(): boolean {
+
+    if (!this.pratica || !this.pratica.learning_agreements) {
+      return false;
+    }
+
     const ultimo = this.pratica?.learning_agreements.at(-1);
     return ultimo?.stato === 'approvato';
   }
 
   tuttiEsamiApprovati(): boolean {
     if (!this.pratica) return false;
-    return this.pratica.mapping_esami.every(e => e.stato_riconoscimento === 'approvato');
+    return this.pratica.pianoesami.every(e => e.stato_riconoscimento === 'approvato');
   }
 
   completaPrePartenza() {
@@ -148,16 +177,35 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
   }
 
   getBadgeClass(s: string) {
-    const m: Record<string,string> = { 'creata':'badge-created','in_attesa_approvazione_la':'badge-waiting','pre_partenza_completata':'badge-approved','mobilita_in_corso':'badge-progress','in_riconoscimento_esami':'badge-waiting','chiusa':'badge-closed' };
+    const m: Record<string, string> = { 'creato': 'badge-created', 'in attesa': 'badge-waiting', 'pre-partenza': 'badge-approved', 'in corso': 'badge-progress', 'viaggioCompletato': 'badge-waiting', 'chiusa': 'badge-closed' };
     return m[s] ?? 'badge-created';
   }
   getStatoLabel(s: string) {
-    const m: Record<string,string> = { 'creata':'Creata','in_attesa_approvazione_la':'Attesa LA','pre_partenza_completata':'Pre-partenza ok','mobilita_in_corso':'In corso','in_riconoscimento_esami':'In riconoscimento','chiusa':'Chiusa' };
+    const m: Record<string, string> = { 'creato': 'Creata', 'in attesa': 'Attesa LA', 'pre-partenza': 'Pre-partenza ok', 'in corso': 'In corso', 'viaggioCompletato': 'In riconoscimento', 'chiusa': 'Chiusa' };
     return m[s] ?? s;
   }
   getRiconoscimentoBadge(s?: string) {
     if (s === 'approvato') return 'badge-approved';
     if (s === 'rifiutato') return 'badge-rejected';
     return 'badge-waiting';
+  }
+
+  salvaNuovoStato() {
+    if (!this.pratica || !this.nuovoStato) return;
+
+    this.praticaService.aggiornaStatoPraticaUfficio(this.pratica.ida, this.nuovoStato).subscribe({
+      next: (risposta) => {
+
+        this.pratica!.stato = this.nuovoStato as any;
+
+        this.messaggio = 'Stato della pratica aggiornato con successo!';
+        setTimeout(() => this.messaggio = '', 3000);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error("Errore salvataggio stato", err);
+        alert("Impossibile aggiornare lo stato!");
+      }
+    });
   }
 }

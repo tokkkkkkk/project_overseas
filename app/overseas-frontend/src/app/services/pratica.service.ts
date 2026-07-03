@@ -21,8 +21,20 @@ export class PraticaService {
     return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/ufficio/app/tutte`);
   }
 
-  getPraticaById(id: number): Observable<PraticaMobilita> {
-    return this.http.get<PraticaMobilita>(`${this.apiUrl}/pratiche/${id}`);
+  getPraticaById(id: string): Observable<PraticaMobilita> {
+    return this.http.get<PraticaMobilita>(`${this.apiUrl}/studente/pratiche/${id}`);
+  }
+
+  getPraticaUfficioById(id: string): Observable<PraticaMobilita> {
+    return this.http.get<PraticaMobilita>(`${this.apiUrl}/ufficio/pratiche/${id}`);
+  }
+
+  getPraticheDocente(): Observable<PraticaMobilita[]> {
+    return this.http.get<PraticaMobilita[]>(`${this.apiUrl}/docente/studenti`);
+  }
+
+  getPraticaDocenteById(ida: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/docente/pratiche/${ida}`);
   }
 
   creaPratica(dati: {
@@ -40,6 +52,15 @@ export class PraticaService {
     return this.http.put<PraticaMobilita>(`${this.apiUrl}/pratiche/${id}`, dati);
   }
 
+  aggiornaStatoPraticaUfficio(id: string, nuovoStato: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/ufficio/pratiche/${id}/stato`, { stato: nuovoStato });
+  }
+
+  eliminaPratica(id: string): Observable<any> {
+    // Usa .delete() invece di .get() o .post()
+    return this.http.delete(`${this.apiUrl}/studente/elimina/${id}`);
+  }
+
   // ---- LEARNING AGREEMENT ----
 
   caricaLearningAgreement(praticaId: string, file: File): Observable<any> {
@@ -49,7 +70,7 @@ export class PraticaService {
   }
 
   valutaLearningAgreement(laId: number, decisione: 'approvato' | 'rifiutato', motivazione?: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/learning-agreement/${laId}/valuta`, { decisione, motivazione });
+    return this.http.put(`${this.apiUrl}/docente/learning-agreement/${laId}/valuta`, { decisione, motivazione });
   }
 
   // ---- TRANSCRIPT ----
@@ -67,7 +88,7 @@ export class PraticaService {
   }
 
   riconosciEsame(esameId: number, decisione: 'approvato' | 'rifiutato'): Observable<any> {
-    return this.http.put(`${this.apiUrl}/esami/${esameId}/riconosci`, { decisione });
+    return this.http.put(`${this.apiUrl}/docente/esami/${esameId}/riconosci`, { decisione });
   }
 
   // ---- UFFICIO ----
@@ -86,7 +107,7 @@ export class PraticaService {
     return this.http.get<IstitutoOspitante[]>(`${this.apiUrl}/studente/istituti`);
   }
 
-   aggiungiIstituo(datiIstituto: any): Observable<any> {
+  aggiungiIstituo(datiIstituto: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/ufficio/istituti`, datiIstituto);
   }
 
