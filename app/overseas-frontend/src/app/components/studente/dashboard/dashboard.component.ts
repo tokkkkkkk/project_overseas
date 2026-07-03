@@ -87,8 +87,8 @@ export class StudenteDashboardComponent implements OnInit {
         console.log('got data', data);
         this.pratiche = data;
         this.loading = false;
-        console.log('loading is now', this.loading, 'pratiche count', this.pratiche.length);
         this.cdr.detectChanges(); // force it
+
       },
       error: () => { this.loading = false; }
     });
