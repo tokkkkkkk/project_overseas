@@ -8,6 +8,7 @@ from app.models import (
     studente,
     learningagreement,
     docentireferenti,
+    utenti,
     db,
 )
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -24,14 +25,39 @@ bp_studente = Blueprint(
 @jwt_required()
 def get_my_app():
     studente_id = get_jwt_identity()
-    query = select(applicazione).where(applicazione.username_studente == studente_id)
-    app = db.session.execute(query).scalars().all()
+    query = (
+        select(applicazione, institution, utenti)
+        .where(applicazione.username_studente == studente_id)
+        .join(institution, applicazione.idin == institution.idin)
+        .join(utenti, applicazione.username_docente == utenti.username)
+    )
+    app = db.session.execute(query).all()
     # messo all al posto di first, dato che angular si aspetta una lista
 
     if not app:
         return jsonify([]), 200
-    pratiche_json = [pratica.to_dict() for pratica in app]
-    return jsonify(pratiche_json), 200
+
+    lista_pratiche = []
+    for app, ist, doc in app:
+        lista_pratiche.append(
+            {
+                "id": app.ida,
+                # strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
+                "anno_accademico": app.anno_accademico,
+                "istituto": {
+                    "nome": ist.nome,
+                    "paese": ist.paese,
+                },
+                "periodo": app.periodo_previsto,
+                "stato": app.stato,
+                "docente": {
+                    "nome": doc.nome,
+                    "cognome": doc.cognome,
+                },
+            }
+        )
+
+    return jsonify(lista_pratiche), 200
 
 
 @bp_studente.route("/pratiche", methods=["POST"])
@@ -44,9 +70,9 @@ def create_myapp():
     istituto_id = dati["istituto_id"]
     periodo = dati["periodo"]
     docente = dati["docente_id"]
-    
-    print("ssss",dati)
-    
+
+    print("ssss", dati)
+
     app = applicazione(
         ida=nuovo_ida,
         stato="creato",
