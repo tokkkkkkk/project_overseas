@@ -51,16 +51,51 @@ import { IstitutoOspitante } from '../../../models/models';
   `
 })
 export class IstitutiComponent implements OnInit {
+
+  errore = '';
+  successo = '';
+  loading = false;
+
   istituti: IstitutoOspitante[] = [];
   mostraForm = false;
   nuovoIstituto: Partial<IstitutoOspitante> = { nome: '', paese: '', citta: '' };
 
-  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) {}
+  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) { }
 
-  ngOnInit() { this.praticaService.getIstituti().subscribe(d => {this.istituti = d; this.cdr.detectChanges();});}
+  ngOnInit() { this.caricaIstituti(); }
+
+  caricaIstituti() {
+    this.praticaService.getIstituti().subscribe(d => { this.istituti = d; this.cdr.detectChanges(); });
+  }
 
   salvaIstituto() {
     // Nota: implementa l'endpoint POST /api/istituti nel backend per completare questa funzione
-    this.mostraForm = false;
+    this.errore = '';
+    this.successo = '';
+
+    if (!this.nuovoIstituto.nome || !this.nuovoIstituto.paese || !this.nuovoIstituto.citta) {
+      this.errore = 'compila tutti i campi obbligatori'
+      return;
+    }
+
+    this.loading = true;
+
+    this.praticaService.aggiungiIstituo(this.nuovoIstituto).subscribe({
+      next: (risposta) => {
+        this.successo = 'istituo aggiunto con successo';
+        this.loading = false;
+
+        this.caricaIstituti();
+
+        setTimeout(() => {
+          this.mostraForm = false;
+          this.nuovoIstituto = { nome: '', paese: '', citta: '' };
+        }, 1500);
+      },
+      error: (err) => {
+        this.errore = err.error?.error ?? 'errore durante il salvataggio';
+        this.loading = false;
+      }
+    });
   }
 }

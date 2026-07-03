@@ -143,14 +143,14 @@ def aggiungi_istituto():
     n_idin = create_inst_id(db.session, institution)
     n_nome = dati["nome"]
     n_paese = dati["paese"]
-    n_città = dati["città"]
+    n_citta = dati["citta"]
     n_username_ufficio = username
 
     istituto = institution(
         idin = n_idin,
         nome = n_nome,
         paese = n_paese,
-        città = n_città,
+        citta = n_citta,
         username_ufficio = n_username_ufficio,
     )
 
@@ -158,4 +158,4 @@ def aggiungi_istituto():
     db.session.flush()
 
     db.session.commit()
-
+    return jsonify({"message": "Istituto aggiunto con successo!"}), 201

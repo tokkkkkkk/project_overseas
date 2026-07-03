@@ -20,7 +20,7 @@ import { PraticaMobilita } from '../../../models/models';
 
     <div class="cards-grid">
       <div class="metric-card"><div class="metric-label">Totale pratiche</div><div class="metric-value blue">{{ pratiche.length }}</div></div>
-      <div class="metric-card"><div class="metric-label">Pre partenza da registrare</div><div class="metric-value amber">{{ contaStato('pre-partenza') }}</div></div>
+      <div class="metric-card"><div class="metric-label">Pre partenza</div><div class="metric-value amber">{{ contaStato('pre-partenza') }}</div></div>
       <div class="metric-card"><div class="metric-label">In corso</div><div class="metric-value blue">{{ contaStato('in corso') }}</div></div>
       <div class="metric-card"><div class="metric-label">Chiuse</div><div class="metric-value green">{{ contaStato('completato') }}</div></div>
     </div>
