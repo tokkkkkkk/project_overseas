@@ -20,7 +20,7 @@ bp_ufficio = Blueprint(
     __name__,
 )
 
-#per la query doppia su utenti
+# per la query doppia su utenti
 studente = aliased(utenti)
 docente = aliased(utenti)
 
@@ -43,21 +43,18 @@ def tutte_le_app():
         lista_pratiche.append(
             {
                 "id": app.ida,
-                #strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
+                # strutture di invio dati per restituirli uguali a come sono richiesti nel file del frontend
                 "studente": {
                     "nome": stud.nome,
                     "cognome": stud.cognome,
                 },
-                
                 "istituto": {
                     "nome": ist.nome,
                     "paese": ist.paese,
                 },
-
                 "periodo": app.periodo_previsto,
                 "stato": app.stato,
-
-                 "docente": {
+                "docente": {
                     "nome": doc.nome,
                     "cognome": doc.cognome,
                 },
@@ -65,6 +62,47 @@ def tutte_le_app():
         )
 
     return jsonify(lista_pratiche), 200
+
+
+@bp_ufficio.route("/app/<string:id_pratica>", methods=["GET"])
+@jwt_required()
+def dettaglio_pratica(id_pratica):
+
+    query = (
+        select(applicazione, institution, studente, docente)
+        .join(institution, applicazione.idin == institution.idin)
+        .join(studente, applicazione.username_studente == studente.username)
+        .join(docente, applicazione.username_docente == docente.username)
+        .where(applicazione.ida == id_pratica)
+    )
+
+    risultato = db.session.execute(query).first()
+
+    if not risultato:
+        return jsonify({"error": "Pratica non trovata"}), 404
+
+    app, ist, stud, doc = risultato
+
+    dettaglio = {
+        "id": app.ida,
+        "stato": app.stato,
+        "periodo": app.periodo_previsto,
+        "istituto": {
+            "nome": ist.nome,
+            "paese": ist.paese,
+        },
+        "studente": {
+            "nome": stud.nome,
+            "cognome": stud.cognome,
+            "username": stud.username,
+        },
+        "docente": {
+            "nome": doc.nome,
+            "cognome": doc.cognome,
+        },
+    }
+
+    return jsonify(dettaglio), 200
 
 
 @bp_ufficio.route("/app/da-approvare", methods=["GET"])
@@ -134,7 +172,8 @@ def chiusura_app(ida):
 
     return jsonify({"msg": "app aggiornata"}), 200
 
-@bp_ufficio.route("/istituti", methods = ["POST"])
+
+@bp_ufficio.route("/istituti", methods=["POST"])
 @jwt_required()
 def aggiungi_istituto():
     username = get_jwt_identity()
@@ -147,11 +186,11 @@ def aggiungi_istituto():
     n_username_ufficio = username
 
     istituto = institution(
-        idin = n_idin,
-        nome = n_nome,
-        paese = n_paese,
-        citta = n_citta,
-        username_ufficio = n_username_ufficio,
+        idin=n_idin,
+        nome=n_nome,
+        paese=n_paese,
+        citta=n_citta,
+        username_ufficio=n_username_ufficio,
     )
 
     db.session.add(istituto)
