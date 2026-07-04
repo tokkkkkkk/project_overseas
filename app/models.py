@@ -350,3 +350,16 @@ class institution(db.Model):
             "città": self.citta,
             "citta": self.citta,
         }
+        
+class pianoesami_backup(db.Model):
+    __tablename__ = "pianoesami_backup"
+    
+    idpe_backup: Mapped[int] = mapped_column(primary_key=True)
+    ida: Mapped[str] = mapped_column(ForeignKey("applicazione.ida"))
+    idpe_originale: Mapped[Optional[int]] = mapped_column(nullable=True)
+    codiceinsegnamentoestero: Mapped[str] = mapped_column(nullable=False)
+    titoloinsegnamentoestero: Mapped[str] = mapped_column(nullable=False)
+    creditiinsegnamentoestero: Mapped[int] = mapped_column(nullable=False)
+    codiceinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
+    titoloinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
+    creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)

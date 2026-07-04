@@ -70,7 +70,7 @@ import { PraticaMobilita } from '../../../models/models';
                   <td>{{ esame.codice_estero }} — {{ esame.titolo_estero }}</td>
                   <td>{{ esame.codice_cafoscari }} — {{ esame.titolo_cafoscari }}</td>
                   <td>{{ esame.voto_ottenuto ?? '—' }}</td>
-                  <td><span [class]="'badge ' + getRiconoscimentoBadge(esame.stato_riconoscimento)">{{ esame.stato_riconoscimento ?? 'in_attesa' }}</span></td>
+                  <td><span [class]="'badge ' + getRiconoscimentoBadge(esame.stato_riconoscimento)">{{ getStatoEsameLabel(esame.stato_riconoscimento ?? 'in_attesa') }}</span></td>
                 </tr>
               }
             </tbody>
@@ -196,6 +196,15 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
     return 'badge-waiting';
   }
 
+  getStatoEsameLabel(stato: string): string {
+    const map: Record<string, string> = {
+      'in_attesa': 'In attesa',
+      'approvato': 'Approvato',
+      'rifiutato': 'Rifiutato'
+    };
+    return map[stato] ?? stato;
+  }
+
   salvaNuovoStato() {
     if (!this.pratica || !this.nuovoStato) return;
 
@@ -209,8 +218,19 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
+
         console.error("Errore salvataggio stato", err);
-        alert("Impossibile aggiornare lo stato!");
+
+        let msgErrore = "Impossibile aggiornare lo stato (Errore di rete generico)";
+
+        if(err.error && err.error.msg){
+          msgErrore = err.error.msg;
+        }else{
+          if(typeof err.error === "string"){
+            msgErrore = err.error;
+          }
+        }
+        alert(msgErrore);
       }
     });
   }

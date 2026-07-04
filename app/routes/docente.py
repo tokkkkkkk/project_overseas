@@ -1,12 +1,13 @@
 import flask
 import sqlalchemy as sq
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, String, select
+from sqlalchemy import Integer, String, delete, select, update
 from datetime import date
 
 from app.models import (
     applicazione,
     pianoesami,
+    pianoesami_backup,
     studente,
     learningagreement,
     docentireferenti,
@@ -109,28 +110,29 @@ def get_dettaglio_app(ida):
         return auth
 
     docente_id = get_jwt_identity()
-    query = (
-        select(applicazione, institution, pianoesami, learningagreement, utenti)
-        .outerjoin(institution, applicazione.idin == institution.idin)
-        .outerjoin(pianoesami, applicazione.ida == pianoesami.ida)
-        .outerjoin(utenti, applicazione.username_studente == utenti.username)
-        .outerjoin(learningagreement, applicazione.idla == learningagreement.idla)
-        .where(applicazione.ida == ida, applicazione.username_docente == docente_id)
-    )
-    risultati = db.session.execute(query).all()
+    
+    # 2. Carica la pratica (verificando che appartenga al docente)
+    app = db.session.execute(
+        select(applicazione).where(
+            applicazione.ida == ida, 
+            applicazione.username_docente == docente_id
+        )
+    ).scalars().first()
 
-    if not risultati:
-        return jsonify({"error": "Pratica non trovata"}), 404
+    if not app:
+        return jsonify({"error": "Pratica non trovata o non autorizzata"}), 404
 
-    app = risultati[0][0]
-    ist = risultati[0][1]
-    learn = risultati[0][3]
-    stud = risultati[0][4]
+    # 3. Carica i dati correlati in modo esplicito
+    db.session.expire_all()
+    esami = db.session.execute(
+        select(pianoesami).where(pianoesami.ida == ida)
+    ).scalars().all()
+    
+    ist = db.session.get(institution, app.idin)
+    stud = db.session.get(utenti, app.username_studente)
+    learn = db.session.get(learningagreement, app.idla)
 
-    # 3. Estrai l'elenco di TUTTI gli esami da TUTTE le righe
-    # riga[2] corrisponde a 'pianoesami' nel tuo select(...) originale
-    tutti_gli_esami = [row[2] for row in risultati]
-
+    # 4. Costruisci il dizionario di risposta
     dettaglio = {
         "ida": app.ida,
         "stato": app.stato,
@@ -145,39 +147,28 @@ def get_dettaglio_app(ida):
             "cognome": stud.cognome if stud else "",
             "username": stud.username if stud else "",
         },
-        "learning_agreements": (
-            [
-                {
-                    "id": learn.idla,
-                    # Angular si aspetta 'filename', ma nel DB lo chiami 'percorso_file'
-                    "filename": learn.percorso_file,
-                    # Angular si aspetta 'stato' (es. per il badge), nel DB è 'accettato'
-                    # Angular usa 'data_caricamento' (col pipe date:'dd/MM/yyyy'), nel DB è 'data'
-                    "data_caricamento": learn.data,
-                    # Questo ti tornerà utile se il docente rifiuta e deve mostrare il perché
-                }
-            ]
-            if learn
-            else []
-        ),
+        "learning_agreements": [
+            {
+                "id": learn.idla,
+                "filename": learn.percorso_file,
+                "data_caricamento": learn.data,
+            }
+        ] if learn else [],
         "pianoesami": [
             {
-                # Cambia le chiavi (a sinistra) per farle combaciare ESATTAMENTE con l'HTML
-                "id": e.idpe,  # Risolve il crash del "track esame.id"
+                "id": e.idpe,
                 "codice_estero": e.codiceinsegnamentoestero,
                 "titolo_estero": e.titoloinsegnamentoestero,
                 "crediti_estero": e.creditiinsegnamentoestero,
                 "codice_cafoscari": e.codiceinsegnamentocafoscari,
                 "titolo_cafoscari": e.titoloinsegnamentocafoscari,
                 "crediti_cafoscari": e.creditiinsegnamentocafoscari,
-                "voto_ottenuto": getattr(e, "voto_ottenuto", None),
-                "data_superamento": getattr(e, "data_superamento", None),
-                "stato_riconoscimento": getattr(e, "stato_riconoscimento", "in_attesa"),
+                "stato": e.stato
             }
-            for e in tutti_gli_esami
-            if e is not None
-        ],
+            for e in esami
+        ]
     }
+    
     return jsonify(dettaglio), 200
 
 
@@ -215,9 +206,52 @@ def valuta_learning_agreement(idla):
             if decisione == "approvato":
                 app.stato = "pre-partenza"
                 learn.accettato = "Si"
+                db.session.execute(
+                    update(pianoesami)
+                        .where(pianoesami.ida == app.ida)
+                        .values(stato="approvato")
+                )
             elif decisione == "rifiutato":
-                app.stato = "creato"
                 learn.accettato = "No"
+                
+                # Distingui tra rifiuto iniziale e rifiuto di modifica
+                if app.dataarrivo and app.datapartenza:
+                    # È una modifica durante la mobilità — non annullare
+                    # lo stato rimane invariato
+                    app.stato="in corso"
+                else:
+                    # È il primo LA — annulla la pratica
+                    app.stato = "annullato"
+                
+                # Ripristina esami dal backup (in entrambi i casi)
+                backup_esami = db.session.execute(
+                    select(pianoesami_backup).where(pianoesami_backup.ida == app.ida)
+                ).scalars().all()
+                
+                if backup_esami:
+                    # Elimina esami attuali
+                    db.session.execute(
+                        delete(pianoesami).where(pianoesami.ida == app.ida)
+                    )
+                    db.session.flush()
+                    
+                    # Ripristina dal backup
+                    for b in backup_esami:
+                        ripristinato = pianoesami(
+                            ida=b.ida,
+                            codiceinsegnamentoestero=b.codiceinsegnamentoestero,
+                            titoloinsegnamentoestero=b.titoloinsegnamentoestero,
+                            creditiinsegnamentoestero=b.creditiinsegnamentoestero,
+                            codiceinsegnamentocafoscari=b.codiceinsegnamentocafoscari,
+                            titoloinsegnamentocafoscari=b.titoloinsegnamentocafoscari,
+                            creditiinsegnamentocafoscari=b.creditiinsegnamentocafoscari,
+                        )
+                        db.session.add(ripristinato)
+                    
+                    # Elimina il backup dopo il ripristino
+                    db.session.execute(
+                        delete(pianoesami_backup).where(pianoesami_backup.ida == app.ida)
+                    )
             db.session.commit()
             print(decisione)
             return (
@@ -244,6 +278,9 @@ def riconosci_esame(idpe):
 
     dati = request.json
     decisione = dati.get("decisione")  # Riceverà 'approvato' o 'rifiutato'
+    
+    
+    
 
     esame = (
         db.session.execute(select(pianoesami).where(pianoesami.idpe == idpe))
@@ -261,7 +298,7 @@ def riconosci_esame(idpe):
         .scalars()
         .first()
     )
-
+    
     if app and decisione == "approvato":
 
         esami_rimasti = (
@@ -275,7 +312,7 @@ def riconosci_esame(idpe):
         )
 
         if not esami_rimasti:
-            app.stato = "completato"
+            app.stato = "viaggioCompletato"
 
     db.session.commit()
     return jsonify({"msg": f"Esame aggiornato con successo: {decisione}"}), 200

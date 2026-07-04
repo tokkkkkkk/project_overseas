@@ -49,7 +49,7 @@ export class PraticaService {
   }
 
   aggiornaPratica(id: string, dati: Partial<PraticaMobilita>): Observable<PraticaMobilita> {
-    return this.http.put<PraticaMobilita>(`${this.apiUrl}/pratiche/${id}`, dati);
+    return this.http.put<PraticaMobilita>(`${this.apiUrl}/studente/pratiche/${id}`, dati);
   }
 
   aggiornaStatoPraticaUfficio(id: string, nuovoStato: string): Observable<any> {
@@ -95,7 +95,7 @@ export class PraticaService {
     return this.http.put(`${this.apiUrl}/docente/esami/${esameId}/riconosci`, { decisione });
   }
 
-  
+
   aggiornaPianoEsami(ida: string, esami: any[]): Observable<any> {
     return this.http.put(`${this.apiUrl}/studente/applicazione/${ida}/esami`, esami);
   }

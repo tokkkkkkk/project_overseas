@@ -161,10 +161,29 @@ def verifica_app(id_pratica):
     if not app:
         return jsonify({"msg": "applicazione non trovata"}), 400
     
-    app.stato = statoAgg
-    db.session.commit()
+    if statoAgg == "in corso":
 
-    return jsonify({"msg": "Stato aggiornato con successo!", "nuovo_stato": app.stato}), 200
+        if not app.idla:
+            return jsonify({"msg": "⛔ Impossibile passare 'in corso': Nessun Learning Agreement collegato alla pratica."}), 403
+
+        query_la = select(learningagreement).where(learningagreement.idla == app.idla)
+        la = db.session.execute(query_la).scalars().first()
+
+        if not la or str(la.accettato).lower() not in ['sì', 'si', 'approvato']: 
+            return jsonify({"msg": "⛔ Impossibile passare 'in corso': Il Docente non ha ancora approvato il Learning Agreement!"}), 403
+
+    if statoAgg in ["completato", "chiusa", "chiuso"]:
+        if not app.transcriptofrecords or str(app.transcriptofrecords).lower() != "caricato":
+            return jsonify({"msg": "⛔ Impossibile chiudere la pratica: Il Transcript of Records non è ancora stato caricato!"}), 403
+
+
+    try:
+        app.stato = statoAgg
+        db.session.commit()
+        return jsonify({"msg": "Stato aggiornato con successo!", "nuovo_stato": app.stato}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"msg": f"Errore database: {str(e)}"}), 500
 
 
 
@@ -195,33 +214,6 @@ def app_da_chiudere():
     chiusure = db.session.execute(query).scalars().all()
 
     return jsonify([c.to_dict() for c in chiusure])
-
-
-@bp_ufficio.route("/app/<string:ida>/chiusura", methods=["PATCH"])
-@jwt_required()
-def chiusura_app(ida):
-    auth = require_role("ufficio")
-    if auth:
-        return auth
-
-    dati = request.json
-    statoAgg = dati.get("stato")
-
-    if not statoAgg:
-        return jsonify({"msg": "campo stato mancante"}), 400
-
-    query = select(applicazione).where(applicazione.ida == ida)
-    app = db.session.execute(query).scalars().first()
-    if not app:
-        return jsonify({"msg": "applicazione non trovata"}), 404
-
-    if app.stato != "viaggioCompletato":
-        return jsonify({"msg": "stato non valido per l'operazione"})
-
-    app.stato = statoAgg
-    db.session.commit()
-
-    return jsonify({"msg": "app aggiornata"}), 200
 
 
 @bp_ufficio.route("/istituti", methods=["POST"])

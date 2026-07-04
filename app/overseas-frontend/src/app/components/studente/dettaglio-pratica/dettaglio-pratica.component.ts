@@ -51,37 +51,37 @@ import { PraticaMobilita } from '../../../models/models';
           @for (esame of pratica.pianoesami; track $index; let i = $index) {
             <tr>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso' ||  pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.codice_estero" name="cod_est_{{i}}" class="mini-input" style="width:80px">
                 } @else { {{ esame.codice_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.titolo_estero" name="tit_est_{{i}}" class="mini-input">
                 } @else { {{ esame.titolo_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.crediti_estero" name="cfu_est_{{i}}" type="number" class="mini-input" style="width:50px">
                 } @else { {{ esame.crediti_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.codice_cafoscari" name="cod_cf_{{i}}" class="mini-input" style="width:80px">
                 } @else { {{ esame.codice_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.titolo_cafoscari" name="tit_cf_{{i}}" class="mini-input">
                 } @else { {{ esame.titolo_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <input [(ngModel)]="esame.crediti_cafoscari" name="cfu_cf_{{i}}" type="number" class="mini-input" style="width:50px">
                 } @else { {{ esame.crediti_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa'|| pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
                   <button class="btn btn-sm btn-danger" (click)="eliminaEsame(i)">🗑️</button>
                 }
               </td>
@@ -90,7 +90,7 @@ import { PraticaMobilita } from '../../../models/models';
         </tbody>
       </table>
 
-      @if (pratica.stato === 'in attesa' || pratica.stato === 'pre-partenza' || pratica.stato === 'in corso') {
+      @if (pratica.stato === 'in attesa' || pratica.stato === 'pre-partenza' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
         <button class="btn btn-secondary btn-sm" style="margin-top:10px" (click)="aggiungiEsame()">+ Aggiungi Esame</button>
         
         <div style="margin-top:2rem; border-top: 1px solid #eee; padding-top:1rem;">
@@ -100,7 +100,6 @@ import { PraticaMobilita } from '../../../models/models';
             @else { <span>📤 Clicca per selezionare il nuovo LA (PDF)</span> }
           </div>
           <input #laInput type="file" accept=".pdf" style="display:none" (change)="onNuovoLaSelected($event)" />
-          
           <div style="margin-top:1rem; display:flex; gap:10px;">
             <button class="btn btn-primary btn-sm" (click)="salvaTutto()">✓ Salva modifiche e invia LA</button>
           </div>
@@ -133,6 +132,13 @@ import { PraticaMobilita } from '../../../models/models';
     <div class="card">
       <div class="card-title">Date mobilità</div>
       
+      @if (errore) {
+        <div class="alert-error" style="margin-bottom: 1rem;">{{ errore }}</div>
+      }
+      @if (successo) {
+        <div class="alert-success" style="margin-bottom: 1rem;">{{ successo }}</div>
+      }
+      
       @if (pratica.stato === 'in corso') {
         @if (pratica.data_arrivo && pratica.data_partenza) {
           <div class="form-row" style="display: flex; gap: 2rem; margin-bottom: 0.5rem;">
@@ -141,24 +147,24 @@ import { PraticaMobilita } from '../../../models/models';
               <strong style="font-size: 15px;">{{ pratica.data_arrivo | date:'dd/MM/yyyy' }}</strong>
             </div>
             <div>
-              <span class="text-muted" style="font-size: 13px; display: block;">Data partenza effettiva</span>
-              <strong style="font-size: 15px;">{{ pratica.data_partenza | date:'dd/MM/yyyy' }}</strong>
+            <span class="text-muted" style="font-size: 13px; display: block;">Data partenza effettiva</span>
+            <strong style="font-size: 15px;">{{ pratica.data_partenza | date:'dd/MM/yyyy' }}</strong>
             </div>
           </div>
         } 
         @else {
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Data arrivo effettiva</label>
-              <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Data partenza effettiva</label>
-              <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
-            </div>
+        <div class="form-row" style="display: flex; gap: 2rem;">
+          <div class="form-group">
+            <label class="form-label">Data arrivo effettiva</label>
+            <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
           </div>
-          <button class="btn btn-primary btn-sm" style="margin-top: 1rem;" (click)="salvaDates()">✓ Salva date</button>
-        }
+          <div class="form-group">
+            <label class="form-label">Data partenza effettiva</label>
+            <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-top: 1rem;" (click)="salvaDates()">✓ Salva date</button>
+      }
       } 
       @else {
         <p class="text-muted" style="font-size: 13px;">Le date di mobilità potranno essere inserite quando la pratica passerà allo stato "in corso".</p>
@@ -184,7 +190,8 @@ import { PraticaMobilita } from '../../../models/models';
     .file-row { display: flex; gap: 12px; align-items: center; font-size: 13px; }
     .alert-info { background: #e8eef8; color: #1a3a6b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 1rem; }
     .mini-input { border: 1px solid #e0e6ed; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
-  `]
+    .alert-error { background: #fef0f0; border: 1px solid #f5c0c0; color: #a32d2d; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 1rem; }
+    `]
 })
 export class DettaglioPraticaComponent implements OnInit {
   pratica: PraticaMobilita | null = null;
@@ -193,7 +200,8 @@ export class DettaglioPraticaComponent implements OnInit {
   dataPartenza = '';
   transcriptFile: File | null = null;
   nuovoLaFile: File | null = null;
-
+  errore = '';
+  successo = '';
   tabs = [
     { key: 'info', label: 'Informazioni' },
     { key: 'esami', label: 'Esami' },
@@ -232,7 +240,24 @@ export class DettaglioPraticaComponent implements OnInit {
 
   salvaDates() {
     if (!this.pratica) return;
-    this.praticaService.aggiornaPratica(this.pratica.ida, { data_arrivo: this.dataArrivo, data_partenza: this.dataPartenza }).subscribe();
+    this.errore = '';
+    this.successo = '';
+    if (!this.dataArrivo || !this.dataPartenza) {
+      this.errore = 'Attenzione: Inserisci sia la data di arrivo che la data di partenza!';
+      return;
+    }
+    this.praticaService.aggiornaPratica(this.pratica.ida, { data_arrivo: this.dataArrivo, data_partenza: this.dataPartenza }).subscribe({
+      next: () => {
+        this.successo = 'Date salvate con successo!';
+        this.cdr.detectChanges(); // Forza l'aggiornamento visivo
+        setTimeout(() => window.location.reload(), 1500);
+      },
+      error: (err) => {
+        console.error("Errore salvataggio date:", err);
+        this.errore = 'Si è verificato un errore durante il salvataggio delle date.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   onTranscriptSelected(e: Event) {
@@ -300,13 +325,14 @@ export class DettaglioPraticaComponent implements OnInit {
 
   salvaTutto() {
     if (!this.pratica) return;
-
     // 1. Salva il piano esami modificato tramite input
     this.praticaService.aggiornaPianoEsami(this.pratica.ida, this.pratica.pianoesami).subscribe({
       next: () => {
         // 2. Se c'è un file, caricalo subito dopo
         if (this.nuovoLaFile) {
+          console.log("1");
           this.caricaNuovoLa();
+          console.log("2");
         } else {
           alert("Modifiche salvate con successo!");
           window.location.reload();
@@ -318,12 +344,11 @@ export class DettaglioPraticaComponent implements OnInit {
 
   aggiungiEsame() {
     if (!this.pratica) {
-      console.log("goon");
       return;
     }
     // Creiamo un nuovo esame vuoto (l'ID sarà gestito dal DB)
     this.pratica.pianoesami.push({
-      id: 0, // 0 segnala al backend che è un nuovo record
+      id: 0,
       codice_estero: '',
       titolo_estero: '',
       crediti_estero: 0,
@@ -332,6 +357,7 @@ export class DettaglioPraticaComponent implements OnInit {
       crediti_cafoscari: 0,
       stato_riconoscimento: 'in_attesa'
     });
+    console.log("Piano attuale:", this.pratica.pianoesami);
   }
 
   eliminaEsame(index: number) {

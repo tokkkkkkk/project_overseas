@@ -5,6 +5,7 @@ from sqlalchemy import Integer, String, select, delete
 from app.models import (
     applicazione,
     institution,
+    pianoesami_backup,
     studente,
     learningagreement,
     docentireferenti,
@@ -14,8 +15,9 @@ from app.models import (
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from flask import jsonify, request, Blueprint, redirect
 from app.models import pianoesami, applicazione, create_id, create_idLa
-from datetime import date
+from datetime import date, datetime
 from werkzeug.utils import secure_filename
+import traceback
 
 bp_studente = Blueprint(
     "studente",
@@ -82,6 +84,48 @@ studente = aliased(utenti)
 docente = aliased(utenti)
 
 
+@bp_studente.route("/pratiche/<ida>", methods=["PUT"])
+@jwt_required()
+def update_applicazione_studente(ida):
+    try:
+        auth = require_role("studente")
+        if auth:
+            return auth
+        dati = request.json
+        studente_id = get_jwt_identity()
+        query = select(applicazione).where(
+            applicazione.ida == ida, applicazione.username_studente == studente_id
+        )
+        risultati = db.session.execute(query).scalars().first()
+
+        if not risultati:
+            return jsonify({"error": "Pratica non trovata"}), 404
+
+        if "data_partenza" in dati:
+            val_p = dati["data_partenza"]
+            risultati.datapartenza = val_p if val_p else None
+
+        # 2. Handle Arrivo: Same exact logic
+        if "data_arrivo" in dati:
+            val_a = dati["data_arrivo"]
+            risultati.dataarrivo = val_a if val_a else None
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("====== ERROR DETAILS ======")
+        traceback.print_exc()
+        print("===========================")
+
+        # And this sends the error directly to your Angular console
+        return (
+            jsonify({"error": f"Crash Type: {type(e).__name__} | Message: {str(e)}"}),
+            500,
+        )
+
+    return jsonify({"msg": "suiccess"}), 200
+
+
 @bp_studente.route("/pratiche/<ida>", methods=["GET"])
 @jwt_required()
 def dettaglio_applicazione_studente(ida):
@@ -116,6 +160,8 @@ def dettaglio_applicazione_studente(ida):
         "ida": app.ida,
         "stato": app.stato,
         "periodo": app.periodo_previsto,
+        "data_arrivo": app.dataarrivo,
+        "data_partenza": app.datapartenza,
         "istituto": {
             "nome": ist.nome if ist else "Nessun istituto",
             "paese": ist.paese if ist else "-",
@@ -218,7 +264,7 @@ def get_my_la(ida):
     if file.filename == "":
         return jsonify({"msg": "Nessun file selezionato"}), 400
 
-    filename = secure_filename(file.filename)
+    filename = secure_filename(f"{nuovo_idla}_{file.filename}")
     full_path = os.path.join(CARTELLA_UPLOADS, filename)
     file.save(full_path)
 
@@ -233,6 +279,7 @@ def get_my_la(ida):
     get = db.session.execute(query).scalars().first()
 
     get.idla = nuovo_idla
+    get.stato = "in attesa"
     db.session.add(la)
     try:
         db.session.commit()
@@ -365,57 +412,93 @@ def carica_transcript(ida):
 @bp_studente.route("/applicazione/<string:ida>/esami", methods=["PUT"])
 @jwt_required()
 def aggiorna_piano_esami(ida):
-    auth = require_role("studente")
-    if auth:
-        return auth
-    app = (
-        db.session.execute(select(applicazione).where(applicazione.ida == ida))
-        .scalars()
-        .first()
-    )
-    if not app or app.stato != ("pre-partenza", "in corso"):
-        return jsonify({"msg": "Modifica non consentita"}), 403
-
-    esami_ricevuti = request.json
-
-    # 1. Filtra gli ID validi (usando idpe)
-    # Convertiamo a stringa per evitare il conflitto tra stringa (ida dell'app) e intero (idpe dell'esame)
-    ids_ricevuti = [e.get("idpe") for e in esami_ricevuti if e.get("idpe") != 0]
-
-    # 2. Elimina dal DB gli esami non più presenti (usando 'ida' come FK)
-    db.session.execute(
-        delete(pianoesami).where(
-            pianoesami.ida == ida, pianoesami.idpe.not_in(ids_ricevuti)
+    try:
+        auth = require_role("studente")
+        if auth:
+            return auth
+        app = (
+            db.session.execute(select(applicazione).where(applicazione.ida == ida))
+            .scalars()
+            .first()
         )
-    )
+        if not app or app.stato not in ["pre-partenza", "in attesa", "rifiutato","in corso"]:
+            return jsonify({"msg": "Modifica non consentita in questo stato"}), 403
 
-    # 3. Aggiorna o Crea gli esami
-    for item in esami_ricevuti:
-        idpe = item.get("idpe")
+        esami_correnti = (
+            db.session.execute(select(pianoesami).where(pianoesami.ida == ida))
+            .scalars()
+            .all()
+        )
 
-        if idpe == 0:
-            # NUOVO ESAME: usa i nomi esatti delle colonne del tuo modello
-            nuovo = pianoesami(
-                ida=ida,
-                codiceinsegnamentoestero=item.get("codice_estero"),
-                titoloinsegnamentoestero=item.get("titolo_estero"),
-                creditiinsegnamentoestero=item.get("crediti_estero"),
-                codiceinsegnamentocafoscari=item.get("codice_cafoscari"),
-                titoloinsegnamentocafoscari=item.get("titolo_cafoscari"),
-                creditiinsegnamentocafoscari=item.get("crediti_cafoscari"),
+        # Elimina backup precedente se esiste
+        db.session.execute(
+            delete(pianoesami_backup).where(pianoesami_backup.ida == ida)
+        )
+
+        # Crea nuovo backup
+        for e in esami_correnti:
+            backup = pianoesami_backup(
+                ida=e.ida,
+                idpe_originale=e.idpe,
+                codiceinsegnamentoestero=e.codiceinsegnamentoestero,
+                titoloinsegnamentoestero=e.titoloinsegnamentoestero,
+                creditiinsegnamentoestero=e.creditiinsegnamentoestero,
+                codiceinsegnamentocafoscari=e.codiceinsegnamentocafoscari,
+                titoloinsegnamentocafoscari=e.titoloinsegnamentocafoscari,
+                creditiinsegnamentocafoscari=e.creditiinsegnamentocafoscari,
             )
-            db.session.add(nuovo)
-        else:
-            # ESAME ESISTENTE
-            esame = db.session.get(pianoesami, idpe)
-            if esame:
-                esame.codiceinsegnamentoestero = item.get("codice_estero")
-                esame.titoloinsegnamentoestero = item.get("titolo_estero")
-                esame.creditiinsegnamentoestero = item.get("crediti_estero")
-                esame.codiceinsegnamentocafoscari = item.get("codice_cafoscari")
-                esame.titoloinsegnamentocafoscari = item.get("titolo_cafoscari")
-                esame.creditiinsegnamentocafoscari = item.get("crediti_cafoscari")
+            db.session.add(backup)
 
-    app.stato = "in attesa"
-    db.session.commit()
+        db.session.flush()
+
+        esami_ricevuti = request.json
+        print(f"DEBUG: Esami ricevuti: {esami_ricevuti}")
+
+        ids_ricevuti = [
+            e.get("idpe") or e.get("id")
+            for e in esami_ricevuti
+            if (e.get("idpe") or e.get("id"))
+        ]
+
+        # 2. Elimina dal DB gli esami non più presenti (usando 'ida' come FK)
+        db.session.execute(
+            delete(pianoesami).where(
+                pianoesami.ida == ida, pianoesami.idpe.not_in(ids_ricevuti)
+            )
+        )
+
+        # 3. Aggiorna o Crea gli esami
+        for item in esami_ricevuti:
+            idpe = item.get("idpe") or item.get("id")
+            print(f"DEBUG item: {item}")
+            print(f"DEBUG idpe: {idpe}")
+
+            if idpe == 0 or idpe is None:
+                nuovo = pianoesami(
+                    ida=ida,
+                    codiceinsegnamentoestero=item.get("codice_estero"),
+                    titoloinsegnamentoestero=item.get("titolo_estero"),
+                    creditiinsegnamentoestero=item.get("crediti_estero"),
+                    codiceinsegnamentocafoscari=item.get("codice_cafoscari"),
+                    titoloinsegnamentocafoscari=item.get("titolo_cafoscari"),
+                    creditiinsegnamentocafoscari=item.get("crediti_cafoscari"),
+                )
+                db.session.add(nuovo)
+                print(f"DEBUG: aggiunto nuovo esame {nuovo}")
+                db.session.flush()
+                print(f"DEBUG: flush completato, idpe assegnato: {nuovo.idpe}")
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print("====== ERROR DETAILS ======")
+        traceback.print_exc()
+        print("===========================")
+
+        # And this sends the error directly to your Angular console
+        return (
+            jsonify({"error": f"Crash Type: {type(e).__name__} | Message: {str(e)}"}),
+            500,
+        )
+    print("DEBUG: commit completato")
     return jsonify({"msg": "Piano esami aggiornato!"}), 200

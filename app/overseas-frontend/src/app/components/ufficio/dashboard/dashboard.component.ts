@@ -37,7 +37,7 @@ import { PraticaMobilita } from '../../../models/models';
             <option value="in corso">In corso</option>
             <option value="viaggioCompletato">Riconoscimento esami</option>
             <option value="completato">Chiusa</option>
-          </select>
+          </select> 
           <select class="form-control" style="width:auto;font-size:12px" [(ngModel)]="filtroPaese">
             <option value="">Tutti i paesi</option>
             @for (paese of paesiDisponibili(); track paese) {
@@ -91,11 +91,11 @@ export class UfficioDashboardComponent implements OnInit {
   }
 
   getBadgeClass(s: string) {
-    const m: Record<string,string> = { 'creata':'badge-created','in_attesa_approvazione_la':'badge-waiting','pre_partenza_completata':'badge-approved','mobilita_in_corso':'badge-progress','in_riconoscimento_esami':'badge-waiting','chiusa':'badge-closed' };
+    const m: Record<string,string> = { 'creato':'badge-created','in attesa':'badge-waiting','pre partenza':'badge-approved','in corso':'badge-progress','viaggioCompletato':'badge-waiting','completato':'badge-closed' };
     return m[s] ?? 'badge-created';
   }
   getStatoLabel(s: string) {
-    const m: Record<string,string> = { 'creata':'Creata','in_attesa_approvazione_la':'Attesa LA','pre_partenza_completata':'Pre-partenza ok','mobilita_in_corso':'In corso','in_riconoscimento_esami':'In riconoscimento','chiusa':'Chiusa' };
+    const m: Record<string,string> = { 'creato': 'Creato', 'in attesa': 'Attesa LA', 'pre-partenza': 'Pre-partenza ok', 'in corso': 'In corso', 'viaggioCompletato': 'In riconoscimento', 'completato': 'Chiuso',  'annullato': 'Annullato' };
     return m[s] ?? s;
   }
 }
