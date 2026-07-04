@@ -112,6 +112,7 @@ def get_dettaglio_app(ida):
         "ida": app.ida,
         "stato": app.stato,
         "periodo": app.periodo_previsto,
+        "transcriptofrecords":app.transcriptofrecords,
         "istituto": {
             "nome": ist.nome if ist else "Nessun istituto",
             "paese": ist.paese if ist else "-",
@@ -222,18 +223,18 @@ def riconosci_esame(idpe):
 
     app = (
         db.session.execute(
-            select(applicazione).where(applicazione.ida == esame.applicazione_id)
+            select(applicazione).where(applicazione.ida == esame.ida)
         )
         .scalars()
         .first()
     )
 
-    if app and decisione == "Si":
+    if app and decisione == "approvato":
 
         esami_rimasti = (
             db.session.execute(
                 select(pianoesami).where(
-                    pianoesami.applicazione_id == app.ida, pianoesami.stato != "Si"
+                    pianoesami.ida == app.ida, pianoesami.stato != "approvato"
                 )
             )
             .scalars()

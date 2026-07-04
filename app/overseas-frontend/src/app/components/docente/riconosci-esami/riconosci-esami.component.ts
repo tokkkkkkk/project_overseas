@@ -1,5 +1,5 @@
 // components/docente/riconosci-esami/riconosci-esami.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
@@ -71,11 +71,15 @@ export class RiconosciEsamiComponent implements OnInit {
   pratica: PraticaMobilita | null = null;
   messaggio = '';
 
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router) {}
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     const id = String(this.route.snapshot.paramMap.get('id'));
-    this.praticaService.getPraticaById(id).subscribe(p => this.pratica = p);
+    this.praticaService.getPraticaDocenteById(id).subscribe(p => {
+      this.pratica = p;
+      console.log(this.pratica);
+      this.cdr.detectChanges();
+    });
   }
 
   decidi(esame: MappingEsame, decisione: 'approvato' | 'rifiutato') {
