@@ -114,15 +114,15 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
   nuovoStato = '';
 
   steps = [
-    { key: 'creato', label: 'Creata' },
+    { key: 'creato', label: 'Creato' },
     { key: 'in attesa', label: 'LA approvato' },
     { key: 'pre-partenza', label: 'Pre-partenza' },
     { key: 'in corso', label: 'In corso' },
     { key: 'viaggioCompletato', label: 'Riconoscimento' },
-    { key: 'completato', label: 'Chiusa' }
+    { key: 'completato', label: 'Chiuso' }
   ];
 
-  statiOrder = ['creato', 'in attesa', 'pre-partenza', 'in corso', 'completato', 'annullato', 'viaggioCompletato'];
+  statiOrder = ['creato', 'in attesa', 'pre-partenza', 'in corso', 'viaggioCompletato', 'completato', 'annullato'];
 
   constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
@@ -138,8 +138,14 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
 
   getStepClass(key: string): string {
     if (!this.pratica) return '';
+
+    if ((this.pratica.stato as string) === 'annullato') return '';
+
     const currentIdx = this.statiOrder.indexOf(this.pratica.stato);
     const stepIdx = this.statiOrder.indexOf(key);
+
+    if (stepIdx === -1 || currentIdx === -1) return '';
+
     if (stepIdx < currentIdx) return 'done';
     if (stepIdx === currentIdx) return 'active';
     return '';
@@ -177,11 +183,11 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
   }
 
   getBadgeClass(s: string) {
-    const m: Record<string, string> = { 'creato': 'badge-created', 'in attesa': 'badge-waiting', 'pre-partenza': 'badge-approved', 'in corso': 'badge-progress', 'viaggioCompletato': 'badge-waiting', 'chiusa': 'badge-closed' };
+    const m: Record<string, string> = { 'creato': 'badge-created', 'in attesa': 'badge-waiting', 'pre-partenza': 'badge-approved', 'in corso': 'badge-progress', 'viaggioCompletato': 'badge-waiting', 'chiusa': 'badge-closed', 'annullata': 'badge-rejected' };
     return m[s] ?? 'badge-created';
   }
   getStatoLabel(s: string) {
-    const m: Record<string, string> = { 'creato': 'Creata', 'in attesa': 'Attesa LA', 'pre-partenza': 'Pre-partenza ok', 'in corso': 'In corso', 'viaggioCompletato': 'In riconoscimento', 'chiusa': 'Chiusa' };
+    const m: Record<string, string> = { 'creato': 'Creato', 'in attesa': 'Attesa LA', 'pre-partenza': 'Pre-partenza ok', 'in corso': 'In corso', 'viaggioCompletato': 'In riconoscimento', 'chiusa': 'Chiuso', 'annullata': 'Annullato' };
     return m[s] ?? s;
   }
   getRiconoscimentoBadge(s?: string) {

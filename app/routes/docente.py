@@ -12,12 +12,19 @@ from app.models import (
     docentireferenti,
     institution,
 )
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import jsonify, request, Blueprint, send_file
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask import jsonify, request, Blueprint, send_file, send_from_directory
 from app.models import utenti, db
 import os
 
-CARTELLA_UPLOADS = "uploads"
+CARTELLA_UPLOADS = os.path.join(os.getcwd(), "app", "static", "uploads")
+
+
+def require_role(expected_role):
+    claims = get_jwt()
+    if claims.get("ruolo") != expected_role:
+        return jsonify({"msg": "Accesso non autorizzato"}), 403
+
 
 bp_docente = Blueprint(
     "docente",
@@ -28,6 +35,10 @@ bp_docente = Blueprint(
 @bp_docente.route("/studenti", methods=["GET"])
 @jwt_required()
 def get_studenti():
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     docente_id = get_jwt_identity()
     studenti = select(applicazione).where(applicazione.username_docente == docente_id)
     stud = db.session.execute(studenti).scalars().all()
@@ -42,6 +53,10 @@ def get_studenti():
 @bp_docente.route("/studenti/<string:username>/applicazione", methods=["GET"])
 @jwt_required()
 def get_applicazione(username):
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     docente_id = get_jwt_identity()
     application = select(applicazione).where(
         applicazione.username_docente == docente_id,
@@ -60,6 +75,10 @@ def get_applicazione(username):
 )
 @jwt_required()
 def get_learning_agreement(username, ida):
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     docente_id = get_jwt_identity()
 
     learningA = select(applicazione).where(
@@ -74,17 +93,21 @@ def get_learning_agreement(username, ida):
     if not la_ex:
         return jsonify({"msg": "learning agreement non presente"}), 404
 
-    percorso = os.path.join(CARTELLA_UPLOADS, la_ex.percorso_file)
-
-    if not os.path.isfile(percorso):
-        return jsonify({"msg:" "file non trovato"}), 404
-
-    return send_file(percorso)
+    try:
+        return send_from_directory(
+            directory=CARTELLA_UPLOADS, path=la_ex.percorso_file, as_attachment=True
+        )
+    except FileNotFoundError:
+        return jsonify({"msg": "file non trovato"}), 404
 
 
 @bp_docente.route("/pratiche/<ida>", methods=["GET"])
 @jwt_required()
 def get_dettaglio_app(ida):
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     docente_id = get_jwt_identity()
     query = (
         select(applicazione, institution, pianoesami, learningagreement, utenti)
@@ -112,7 +135,7 @@ def get_dettaglio_app(ida):
         "ida": app.ida,
         "stato": app.stato,
         "periodo": app.periodo_previsto,
-        "transcriptofrecords":app.transcriptofrecords,
+        "transcriptofrecords": app.transcriptofrecords,
         "istituto": {
             "nome": ist.nome if ist else "Nessun istituto",
             "paese": ist.paese if ist else "-",
@@ -161,6 +184,10 @@ def get_dettaglio_app(ida):
 @bp_docente.route("/learning-agreement/<string:idla>/valuta", methods=["PUT"])
 @jwt_required()
 def valuta_learning_agreement(idla):
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     dati = request.json
     decisione = dati.get("decisione")  # Riceverà 'Si' o 'No'
     motivazione = dati.get("motivazione", "")
@@ -182,13 +209,17 @@ def valuta_learning_agreement(idla):
         # 3. Aggiorna automaticamente lo stato della pratica (applicazione) collegata
         query = select(applicazione).where(applicazione.idla == idla)
         app = db.session.execute(query).scalars().first()
-        
+        query = select(learningagreement).where(learningagreement.idla == idla)
+        learn = db.session.execute(query).scalars().first()
         if app:
             if decisione == "approvato":
                 app.stato = "pre-partenza"
+                learn.accettato = "Si"
             elif decisione == "rifiutato":
                 app.stato = "creato"
+                learn.accettato = "No"
             db.session.commit()
+            print(decisione)
             return (
                 jsonify({"msg": f"Learning Agreement valutato come: {decisione}"}),
                 200,
@@ -207,6 +238,10 @@ def valuta_learning_agreement(idla):
 @bp_docente.route("/esami/<string:idpe>/riconosci", methods=["PUT"])
 @jwt_required()
 def riconosci_esame(idpe):
+    auth = require_role("docente")
+    if auth:
+        return auth
+
     dati = request.json
     decisione = dati.get("decisione")  # Riceverà 'approvato' o 'rifiutato'
 
@@ -222,9 +257,7 @@ def riconosci_esame(idpe):
     esame.stato = decisione
 
     app = (
-        db.session.execute(
-            select(applicazione).where(applicazione.ida == esame.ida)
-        )
+        db.session.execute(select(applicazione).where(applicazione.ida == esame.ida))
         .scalars()
         .first()
     )

@@ -1,4 +1,4 @@
-import flask
+import flask, os
 import sqlalchemy as sq
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, aliased
 from sqlalchemy import Integer, String, select, delete
@@ -11,19 +11,36 @@ from app.models import (
     utenti,
     db,
 )
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from flask import jsonify, request, Blueprint, redirect
-from app.models import pianoesami, applicazione, create_id
+from app.models import pianoesami, applicazione, create_id, create_idLa
+from datetime import date
+from werkzeug.utils import secure_filename
 
 bp_studente = Blueprint(
     "studente",
     __name__,
 )
+CARTELLA_UPLOADS = os.path.join(os.getcwd(), "app", "static", "uploads")
+ALLOWED_EXTENSIONS = {"pdf"}
+
+
+def require_role(expected_role):
+    claims = get_jwt()
+    allowed_roles = (
+        {expected_role} if isinstance(expected_role, str) else set(expected_role)
+    )
+    if claims.get("ruolo") not in allowed_roles:
+        return jsonify({"msg": "Accesso non autorizzato"}), 403
 
 
 @bp_studente.route("/pratiche", methods=["GET"])
 @jwt_required()
 def get_my_app():
+    auth = require_role("studente")
+    if auth:
+        return auth
+
     studente_id = get_jwt_identity()
     query = (
         select(applicazione, institution, utenti)
@@ -68,6 +85,10 @@ docente = aliased(utenti)
 @bp_studente.route("/pratiche/<ida>", methods=["GET"])
 @jwt_required()
 def dettaglio_applicazione_studente(ida):
+    auth = require_role("studente")
+    if auth:
+        return auth
+
     studente_id = get_jwt_identity()
     query = (
         select(applicazione, institution, pianoesami, studente, docente)
@@ -132,6 +153,10 @@ def dettaglio_applicazione_studente(ida):
 @bp_studente.route("/pratiche", methods=["POST"])
 @jwt_required()
 def create_myapp():
+    auth = require_role("studente")
+    if auth:
+        return auth
+
     studente_id = get_jwt_identity()
     dati = request.json
     nuovo_ida = create_id(db.session, applicazione)
@@ -140,11 +165,9 @@ def create_myapp():
     periodo = dati["periodo"]
     docente = dati["docente_id"]
 
-    print("ssss", dati)
-
     app = applicazione(
         ida=nuovo_ida,
-        stato="creato",
+        stato="in attesa",
         esami=False,
         transcriptofrecords="null",
         idin=istituto_id,
@@ -171,13 +194,61 @@ def create_myapp():
     ]
 
     db.session.add_all(nuovi_esami)
-    db.session.commit()
-    return jsonify({"ida": app.ida, "id": app.ida}), 201
+    try:
+        db.session.commit()
+        return jsonify({"ida": app.ida, "id": app.ida}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Errore interno durante l'eliminazione"}), 500
+
+
+@bp_studente.route("/pratiche/<ida>/learning-agreement", methods=["POST"])
+@jwt_required()
+def get_my_la(ida):
+    auth = require_role("studente")
+    if auth:
+        return auth
+
+    docente = db.session.execute(
+        select(applicazione.username_docente).where(applicazione.ida == ida)
+    ).scalar()
+    nuovo_idla = create_idLa(db.session, learningagreement)
+    file = request.files["fileselezionato"]
+
+    if file.filename == "":
+        return jsonify({"msg": "Nessun file selezionato"}), 400
+
+    filename = secure_filename(file.filename)
+    full_path = os.path.join(CARTELLA_UPLOADS, filename)
+    file.save(full_path)
+
+    la = learningagreement(
+        idla=nuovo_idla,
+        accettato=None,
+        data=date.today(),
+        username_docente=docente,
+        percorso_file=filename,
+    )
+    query = select(applicazione).where(applicazione.ida == ida)
+    get = db.session.execute(query).scalars().first()
+
+    get.idla = nuovo_idla
+    db.session.add(la)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error: {e}")  # <--- THIS IS THE KEY!
+        return jsonify({"msg": "Errore interno del server durante il salvataggio"}), 500
+    return jsonify({"msg": "Learning Agreement caricato con successo"}), 200
 
 
 @bp_studente.route("/istituti", methods=["GET"])
 @jwt_required()
 def get_my_institution():
+    auth = require_role(("studente", "ufficio"))
+    if auth:
+        return auth
 
     query = select(institution)
     institution_db = db.session.execute(query).scalars().all()
@@ -187,6 +258,9 @@ def get_my_institution():
 @bp_studente.route("/docente", methods=["GET"])
 @jwt_required()
 def get_my_docente():
+    auth = require_role("studente")
+    if auth:
+        return auth
 
     query = select(docentireferenti)
     docentireferenti_db = db.session.execute(query).scalars().all()
@@ -194,7 +268,12 @@ def get_my_docente():
 
 
 @bp_studente.route("/elimina/<ida>", methods=["DELETE"])
+@jwt_required()
 def delete_pratica(ida):
+    auth = require_role("studente")
+    if auth:
+        return auth
+
     try:
         # 1. Trova la pratica
         app_to_delete = db.session.get(applicazione, ida)
@@ -225,7 +304,118 @@ def delete_pratica(ida):
 
     except Exception as e:
         db.session.rollback()
-        print(
-            f"\n--- ERRORE ELIMINAZIONE A CASCATA ---\n{str(e)}\n-------------------------------------\n"
-        )
         return jsonify({"error": "Errore interno durante l'eliminazione"}), 500
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@bp_studente.route("/pratiche/<string:ida>/transcript", methods=["POST"])
+@jwt_required()
+def carica_transcript(ida):
+    auth = require_role("studente")
+    if auth:
+        return auth
+
+    studente_id = get_jwt_identity()
+
+    # Verifica che la pratica appartenga allo studente
+    pratica = (
+        db.session.execute(
+            select(applicazione).where(
+                applicazione.ida == ida, applicazione.username_studente == studente_id
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+    if not pratica:
+        return jsonify({"msg": "Pratica non trovata"}), 404
+
+    if pratica.stato not in ["in corso", "pre-partenza"]:
+        return jsonify({"msg": "Non puoi caricare il transcript in questo stato"}), 400
+
+    if "file" not in request.files:
+        return jsonify({"msg": "Nessun file caricato"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "" or not allowed_file(file.filename):
+        return jsonify({"msg": "File non valido, deve essere PDF"}), 400
+
+    # Salva il file
+    filename = secure_filename(f"transcript_{ida}_{file.filename}")
+    filepath = os.path.join(CARTELLA_UPLOADS, filename)
+    os.makedirs(CARTELLA_UPLOADS, exist_ok=True)
+    file.save(filepath)
+
+    # Aggiorna la pratica
+    pratica.transcriptofrecords = "caricato"
+    pratica.percorso_transcript = filename
+    db.session.commit()
+
+    return (
+        jsonify({"msg": "Transcript caricato con successo", "filename": filename}),
+        200,
+    )
+
+
+@bp_studente.route("/applicazione/<string:ida>/esami", methods=["PUT"])
+@jwt_required()
+def aggiorna_piano_esami(ida):
+    auth = require_role("studente")
+    if auth:
+        return auth
+    app = (
+        db.session.execute(select(applicazione).where(applicazione.ida == ida))
+        .scalars()
+        .first()
+    )
+    if not app or app.stato != ("pre-partenza", "in corso"):
+        return jsonify({"msg": "Modifica non consentita"}), 403
+
+    esami_ricevuti = request.json
+
+    # 1. Filtra gli ID validi (usando idpe)
+    # Convertiamo a stringa per evitare il conflitto tra stringa (ida dell'app) e intero (idpe dell'esame)
+    ids_ricevuti = [e.get("idpe") for e in esami_ricevuti if e.get("idpe") != 0]
+
+    # 2. Elimina dal DB gli esami non più presenti (usando 'ida' come FK)
+    db.session.execute(
+        delete(pianoesami).where(
+            pianoesami.ida == ida, pianoesami.idpe.not_in(ids_ricevuti)
+        )
+    )
+
+    # 3. Aggiorna o Crea gli esami
+    for item in esami_ricevuti:
+        idpe = item.get("idpe")
+
+        if idpe == 0:
+            # NUOVO ESAME: usa i nomi esatti delle colonne del tuo modello
+            nuovo = pianoesami(
+                ida=ida,
+                codiceinsegnamentoestero=item.get("codice_estero"),
+                titoloinsegnamentoestero=item.get("titolo_estero"),
+                creditiinsegnamentoestero=item.get("crediti_estero"),
+                codiceinsegnamentocafoscari=item.get("codice_cafoscari"),
+                titoloinsegnamentocafoscari=item.get("titolo_cafoscari"),
+                creditiinsegnamentocafoscari=item.get("crediti_cafoscari"),
+            )
+            db.session.add(nuovo)
+        else:
+            # ESAME ESISTENTE
+            esame = db.session.get(pianoesami, idpe)
+            if esame:
+                esame.codiceinsegnamentoestero = item.get("codice_estero")
+                esame.titoloinsegnamentoestero = item.get("titolo_estero")
+                esame.creditiinsegnamentoestero = item.get("crediti_estero")
+                esame.codiceinsegnamentocafoscari = item.get("codice_cafoscari")
+                esame.titoloinsegnamentocafoscari = item.get("titolo_cafoscari")
+                esame.creditiinsegnamentocafoscari = item.get("crediti_cafoscari")
+
+    app.stato = "in attesa"
+    db.session.commit()
+    return jsonify({"msg": "Piano esami aggiornato!"}), 200

@@ -25,7 +25,7 @@ import { PraticaMobilita } from '../../../models/models';
         <div class="file-row">
           <span>📄 {{ ultimoLa?.filename }}</span>
           <span class="text-muted">Versione {{ ultimoLa?.versione }} · {{ ultimoLa?.data_caricamento | date:'dd/MM/yyyy' }}</span>
-          <a [href]="'/api/files/' + ultimoLa?.filename" class="btn btn-sm" download style="margin-left:auto">⬇ Scarica</a>
+          <button *ngIf="ultimoLa?.filename" (click)="download(ultimoLa.filename)" class="btn btn-sm" style="margin-left:auto">⬇ Scarica</button>        
         </div>
       </div>
 
@@ -112,9 +112,32 @@ export class ValutaLaComponent implements OnInit {
 
   rifiuta() {
     if (!this.ultimoLa || !this.motivazione) return;
-    this.praticaService.valutaLearningAgreement(this.ultimoLa.id, 'rifiutato', this.motivazione).subscribe(() => {
+    this.praticaService.valutaLearningAgreement(this.ultimoLa.id, 'rifiutato', this.motivazione).subscribe(p => {
       this.messaggio = 'Learning Agreement rifiutato.';
       setTimeout(() => this.router.navigate(['/docente/dashboard']), 1500);
+    });
+  }
+
+  download(filename: string) {
+    if (!this.pratica) return;
+    this.praticaService.scaricaLearningAgreement(this.pratica.ida, this.pratica.studente.username).subscribe({
+      next(blob: Blob) {
+        const objectUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objectUrl;
+        a.download = filename; // Keep the original filename
+
+
+        // 5. Clean up
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(objectUrl);
+      },
+      error: (err) => {
+        console.error('Errore durante il download del file', err);
+        alert('Impossibile scaricare il file. Sessione scaduta o file non trovato.');
+      }
     });
   }
 }

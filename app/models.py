@@ -1,5 +1,5 @@
 import uuid
-
+import random
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from sqlalchemy.orm import DeclarativeBase
@@ -29,6 +29,24 @@ def create_id(session, modello_applicazione):
     # La vera magia di Python: formatta il numero con esattamente 3 cifre riempiendo di zeri!
     # Se nuovo_numero è 7 -> APP007. Se è 42 -> APP042.
     return f"APP{nuovo_numero:03d}"
+
+
+def create_idLa(session, modello_applicazione):
+    query = select(modello_applicazione.idla).order_by(modello_applicazione.idla.desc())
+    ultimo_id = session.execute(query).scalars().first()
+
+    if ultimo_id:
+        # ultimo_id è una stringa tipo "APP015"
+        # Prendiamo tutto dal 3° carattere in poi (cioè "015") e lo facciamo diventare numero intero (15)
+        numero_attuale = int(ultimo_id[3:])
+        nuovo_numero = numero_attuale + 1
+    else:
+        # Se il database è completamente vuoto, partiamo da 1
+        nuovo_numero = 1
+
+    # La vera magia di Python: formatta il numero con esattamente 3 cifre riempiendo di zeri!
+    # Se nuovo_numero è 7 -> APP007. Se è 42 -> APP042.
+    return f"LA{nuovo_numero:03d}"
 
 
 def create_inst_id(session, modello_istituto):
@@ -143,22 +161,25 @@ class studente(db.Model):
     istituti: Mapped[list["institution"]] = relationship(
         "institution", secondary=vede_institution, back_populates="studente_view"
     )
-   
 
 
 class learningagreement(db.Model):
     __tablename__ = "learningagreement"
-    idla: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
+    idla: Mapped[str] = mapped_column(
+        primary_key=True,
+        unique=True,
+        nullable=False,
+    )
     accettato: Mapped[str] = mapped_column(
         db.Enum(
             "Si",
             "No",
             name="esito_accettazione",
-            nullable=False,
-        )
+            nullable=True,
+        ),nullable=True
     )
     data: Mapped[date] = mapped_column(Date, nullable=False)
-    motivazione: Mapped[str] = mapped_column(nullable=False)
+    motivazione: Mapped[str] = mapped_column(nullable=True)
     username_docente: Mapped[str] = mapped_column(
         String, ForeignKey("docentireferenti.username")
     )
@@ -176,7 +197,7 @@ class learningagreement(db.Model):
             "data": self.data.isoformat() if self.data else None,
             "motivazione": self.motivazione,
             "username_docente": self.username_docente,
-            "filename": getattr(self, 'percorso_file', None)
+            "filename": getattr(self, "percorso_file", None),
         }
 
 
@@ -190,30 +211,30 @@ class pianoesami(db.Model):
     codiceinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
     titoloinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
     creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)
+    stato: Mapped[str] = mapped_column(String(50), default='in attesa')
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
 
     idapp: Mapped["applicazione"] = relationship("applicazione", back_populates="idpe")
-    
+
     def to_dict(self):
         return {
             "idpe": self.idpe,
-            "codice_estero": getattr(self, 'codiceinsegnamentoestero', None),
-            "titolo_estero": getattr(self, 'titoloinsegnamentoestero', None),
-            "crediti_estero": getattr(self, 'creditiinsegnamentoestero', None),
-            "codice_cafoscari": getattr(self, 'codiceinsegnamentocafoscari', None),
-            "titolo_cafoscari": getattr(self, 'titoloinsegnamentocafoscari', None),
-            "crediti_cafoscari": getattr(self, 'creditiinsegnamentocafoscari', None),
-            "stato": getattr(self, 'stato', 'in attesa') # Se hai una colonna stato per l'esame
+            "codice_estero": getattr(self, "codiceinsegnamentoestero", None),
+            "titolo_estero": getattr(self, "titoloinsegnamentoestero", None),
+            "crediti_estero": getattr(self, "creditiinsegnamentoestero", None),
+            "codice_cafoscari": getattr(self, "codiceinsegnamentocafoscari", None),
+            "titolo_cafoscari": getattr(self, "titoloinsegnamentocafoscari", None),
+            "crediti_cafoscari": getattr(self, "creditiinsegnamentocafoscari", None),
+            "stato": getattr(
+                self, "stato", "in attesa"
+            ),  # Se hai una colonna stato per l'esame
         }
-
 
 
 class applicazione(db.Model):
     __tablename__ = "applicazione"
 
-    ida: Mapped[str] = mapped_column(
-        primary_key=True, default=lambda: f"APP{str(uuid.uuid4())[:6].upper()}"
-    )
+    ida: Mapped[str] = mapped_column(primary_key=True)
     stato: Mapped[str] = mapped_column(
         db.Enum(
             "creato",
@@ -231,6 +252,7 @@ class applicazione(db.Model):
     datapartenza: Mapped[date] = mapped_column(nullable=True)
     esami: Mapped[bool] = mapped_column(nullable=True)
     transcriptofrecords: Mapped[str] = mapped_column(db.Enum("caricato", "null"))
+    percorso_transcript: Mapped[str] = mapped_column(nullable=True)
     anno_accademico: Mapped[str] = mapped_column(nullable=True)
     periodo_previsto: Mapped[str]
     idin: Mapped[str] = mapped_column(ForeignKey("institution.idin"))
@@ -273,23 +295,31 @@ class applicazione(db.Model):
             "datapartenza": (
                 self.datapartenza.isoformat() if self.datapartenza else None
             ),
-            
-            "periodo": self.periodo_previsto, 
-            
+            "periodo": self.periodo_previsto,
             "studente": {
-                "nome": self.studente_rel.utente.nome if self.studente_rel else self.username_studente,
-                "cognome": self.studente_rel.utente.cognome if self.studente_rel else ""
+                "nome": (
+                    self.studente_rel.utente.nome
+                    if self.studente_rel
+                    else self.username_studente
+                ),
+                "cognome": (
+                    self.studente_rel.utente.cognome if self.studente_rel else ""
+                ),
             },
-            
             "istituto": {
-                "nome": self.institution_rel.nome if self.institution_rel else "Istituto sconosciuto"
+                "nome": (
+                    self.institution_rel.nome
+                    if self.institution_rel
+                    else "Istituto sconosciuto"
+                )
             },
-            
             # CORRETTO: È un oggetto singolo, quindi lo mettiamo direttamente dentro una lista [ ]
-            "learning_agreements": [self.learning_agreement.to_dict()] if self.learning_agreement else [],
-            
+            "learning_agreements": (
+                [self.learning_agreement.to_dict()] if self.learning_agreement else []
+            ),
             # CORRETTO: 'idpe' è già una lista (Mapped[List["pianoesami"]]), quindi il ciclo va benissimo
-            "mapping_esami": [e.to_dict() for e in self.idpe] if self.idpe else []
+            "mapping_esami": [e.to_dict() for e in self.idpe] if self.idpe else [],
+            "percorso_transcript": self.percorso_transcript,
         }
 
 

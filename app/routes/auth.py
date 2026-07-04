@@ -42,19 +42,26 @@ def login():
     if not ruolo:
         return jsonify({"msg": "Utente senza ruolo assegnato"}), 403
 
-    access_token = create_access_token(identity=username)
+    access_token = create_access_token(
+        identity=username, additional_claims={"ruolo": ruolo}
+    )
 
     # Risposta compatibile con il frontend Angular
-    return jsonify({
-        "token": access_token,
-        "ruolo": ruolo,
-        "utente": {
-            "username": user.username,
-            "nome": user.nome,
-            "cognome": user.cognome,
-            "ruolo": ruolo
-        }
-    }), 200
+    return (
+        jsonify(
+            {
+                "token": access_token,
+                "ruolo": ruolo,
+                "utente": {
+                    "username": user.username,
+                    "nome": user.nome,
+                    "cognome": user.cognome,
+                    "ruolo": ruolo,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @bp_auth.route("/register", methods=["POST", "OPTIONS"])
@@ -67,23 +74,25 @@ def register():
     nome = request.json.get("nome", None)
     cognome = request.json.get("cognome", None)
     # 1. Recupera il ruolo richiesto da Angular
-    ruolo = request.json.get("ruolo", None) 
+    ruolo = request.json.get("ruolo", None)
 
     if not username or not password or not nome or not cognome or not ruolo:
         return jsonify({"msg": "Dati mancanti"}), 400
 
     hashed_password = generate_password_hash(password)
-    user = utenti(username=username, password=hashed_password, nome=nome, cognome=cognome)
+    user = utenti(
+        username=username, password=hashed_password, nome=nome, cognome=cognome
+    )
 
     try:
         db.session.add(user)
-        db.session.flush() # Salva temporaneamente per avere l'utente disponibile
-        
+        db.session.flush()  # Salva temporaneamente per avere l'utente disponibile
+
         # 2. Inserisci l'utente nella tabella corretta in base al ruolo
         if ruolo == "studente":
             # 1. Cerchiamo l'ultimo studente ordinando le matricole in ordine decrescente
             ultimo_studente = studente.query.order_by(studente.matricola.desc()).first()
-            
+
             # 2. Generiamo la nuova matricola
             if ultimo_studente and ultimo_studente.matricola:
                 # Se esiste già uno studente, prendiamo la sua matricola, la trasformiamo in numero, sommiamo 1 e la facciamo tornare stringa
@@ -91,9 +100,9 @@ def register():
             else:
                 # Se il database è vuoto e questo è il primissimo studente, partiamo da una base
                 nuova_matricola = "90001"
-                
+
             # 3. Salviamo il nuovo studente con la matricola sequenziale
-            nuovo_studente = studente(username=username, matricola=nuova_matricola) 
+            nuovo_studente = studente(username=username, matricola=nuova_matricola)
             db.session.add(nuovo_studente)
         elif ruolo == "docente":
             nuovo_docente = docentireferenti(username=username)

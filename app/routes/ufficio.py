@@ -12,7 +12,7 @@ from app.models import (
     utenti,
     pianoesami,
 )
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from flask import jsonify, request, Blueprint
 from app.models import utenti, db, create_inst_id
 
@@ -20,6 +20,12 @@ bp_ufficio = Blueprint(
     "ufficio",
     __name__,
 )
+
+
+def require_role(expected_role):
+    claims = get_jwt()
+    if claims.get("ruolo") != expected_role:
+        return jsonify({"msg": "Accesso non autorizzato"}), 403
 
 # per la query doppia su utenti
 studente = aliased(utenti)
@@ -29,6 +35,9 @@ docente = aliased(utenti)
 @bp_ufficio.route("/app/tutte", methods=["GET"])
 @jwt_required()
 def tutte_le_app():
+    auth = require_role("ufficio")
+    if auth:
+        return auth
 
     query = (
         select(applicazione, institution, studente, docente)
@@ -68,6 +77,9 @@ def tutte_le_app():
 @bp_ufficio.route("/pratiche/<id_pratica>", methods=["GET"])
 @jwt_required()
 def dettaglio_pratica(id_pratica):
+    auth = require_role("ufficio")
+    if auth:
+        return auth
 
     query = (
         select(applicazione, institution, pianoesami, studente, docente)
@@ -133,6 +145,10 @@ def dettaglio_pratica(id_pratica):
 @bp_ufficio.route("/pratiche/<string:id_pratica>/stato", methods=["PUT"])
 @jwt_required()
 def verifica_app(id_pratica):
+    auth = require_role("ufficio")
+    if auth:
+        return auth
+
     dati = request.json
     statoAgg = dati["stato"]
 
@@ -156,6 +172,9 @@ def verifica_app(id_pratica):
 @bp_ufficio.route("/app/da-approvare", methods=["GET"])
 @jwt_required()
 def app_da_verificare():
+    auth = require_role("ufficio")
+    if auth:
+        return auth
 
     query = select(applicazione).where(applicazione.stato == "pre-partenza")
 
@@ -167,6 +186,9 @@ def app_da_verificare():
 @bp_ufficio.route("/app/da-chiudere", methods=["GET"])
 @jwt_required()
 def app_da_chiudere():
+    auth = require_role("ufficio")
+    if auth:
+        return auth
 
     query = select(applicazione).where(applicazione.stato == "viaggioCompletato")
 
@@ -178,6 +200,10 @@ def app_da_chiudere():
 @bp_ufficio.route("/app/<string:ida>/chiusura", methods=["PATCH"])
 @jwt_required()
 def chiusura_app(ida):
+    auth = require_role("ufficio")
+    if auth:
+        return auth
+
     dati = request.json
     statoAgg = dati.get("stato")
 
@@ -201,6 +227,10 @@ def chiusura_app(ida):
 @bp_ufficio.route("/istituti", methods=["POST"])
 @jwt_required()
 def aggiungi_istituto():
+    auth = require_role("ufficio")
+    if auth:
+        return auth
+
     username = get_jwt_identity()
     dati = request.json
 

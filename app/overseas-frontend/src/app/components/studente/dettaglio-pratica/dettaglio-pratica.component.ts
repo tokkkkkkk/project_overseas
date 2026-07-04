@@ -12,161 +12,162 @@ import { PraticaMobilita } from '../../../models/models';
   imports: [FormsModule, CommonModule],
   template: `
     @if (pratica) {
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Pratica #{{ pratica.ida }} — {{ pratica.istituto.nome }}</h1>
-          <p class="page-sub">{{ pratica.anno_accademico }} · {{ pratica.periodo }} · Docente: {{ pratica.docente.nome }} {{ pratica.docente.cognome }}</p>
-        </div>
-        <span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span>
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Pratica #{{ pratica.ida }} — {{ pratica.istituto.nome }}</h1>
+      <p class="page-sub">{{ pratica.anno_accademico }} · {{ pratica.periodo }} · Docente: {{ pratica.docente.nome }} {{ pratica.docente.cognome }}</p>
+    </div>
+    <span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span>
+  </div>
+
+  <div class="status-bar">
+    @for (step of steps; track step.key) {
+      <div [class]="'status-step ' + getStepClass(step.key)">
+        <div class="status-dot"></div>
+        <span>{{ step.label }}</span>
       </div>
-
-      <!-- Barra di stato -->
-      <div class="status-bar">
-        @for (step of steps; track step.key) {
-          <div [class]="'status-step ' + getStepClass(step.key)">
-            <div class="status-dot"></div>
-            <span>{{ step.label }}</span>
-          </div>
-        }
-      </div>
-
-      <!-- Tab -->
-      <div class="tabs">
-        @for (tab of tabs; track tab.key) {
-          <div class="tab" [class.active]="tabAttiva === tab.key" (click)="tabAttiva = tab.key">{{ tab.label }}</div>
-        }
-      </div>
-
-      <!-- Tab: Informazioni -->
-      @if (tabAttiva === 'info') {
-        @if (pratica.stato === 'in corso') {
-          <div class="card">
-            <div class="card-title">Date mobilità</div>
-            @if (pratica.data_arrivo && pratica.data_partenza) {
-              <div class="form-row" style="display: flex; gap: 2rem; margin-bottom: 0.5rem;">
-                <div>
-                  <span class="text-muted" style="font-size: 13px; display: block;">Data arrivo effettiva</span>
-                  <strong style="font-size: 15px;">{{ pratica.data_arrivo | date:'dd/MM/yyyy' }}</strong>
-                </div>
-                <div>
-                  <span class="text-muted" style="font-size: 13px; display: block;">Data partenza effettiva</span>
-                  <strong style="font-size: 15px;">{{ pratica.data_partenza | date:'dd/MM/yyyy' }}</strong>
-                </div>
-              </div>
-            } 
-            @else {
-              <div class="form-row">
-                <div class="form-group">
-                  <label class="form-label">Data arrivo effettiva</label>
-                  <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
-                </div>
-                <div class="form-group">
-                  <label class="form-label">Data partenza effettiva</label>
-                  <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
-                </div>
-              </div>
-              <button class="btn btn-primary btn-sm" (click)="salvaDates()">✓ Salva date</button>
-            }
-          </div>
-        }
-
-        @if (pratica.stato === 'in corso' || pratica.stato === 'pre-partenza') {
-          <div class="card">
-            <div class="card-title">Transcript of Records</div>
-            @if (pratica.transcript) {
-              <div class="file-row">
-                <span>📄 {{ pratica.transcript.filename }}</span>
-                <span class="text-muted">{{ pratica.transcript.data_caricamento | date:'dd/MM/yyyy' }}</span>
-              </div>
-            } @else {
-              <p class="alert-info">Carica il Transcript of Records dopo il rientro per procedere con il riconoscimento esami.</p>
-              <div class="upload-box" (click)="transcriptInput.click()">
-                @if (transcriptFile) {
-                  <span>📄 {{ transcriptFile.name }}</span>
-                } @else {
-                  <span>📤 Clicca per selezionare il Transcript of Records (PDF)</span>
-                }
-              </div>
-              <input #transcriptInput type="file" accept=".pdf" style="display:none" (change)="onTranscriptSelected($event)" />
-              @if (transcriptFile) {
-                <button class="btn btn-primary btn-sm" style="margin-top:8px" (click)="caricaTranscript()">Carica Transcript</button>
-              }
-            }
-          </div>
-        }
-      }
-
-      <!-- Tab: Esami -->
-      @if (tabAttiva === 'esami') {
-        <div class="card">
-          <div class="card-title">Mapping esami</div>
-          <table>
-            <thead>
-              <tr><th>Codice OC</th><th>Titolo estero</th><th>CFU</th><th>Codice EC</th><th>Titolo Ca' Foscari</th><th>CFU</th><th>Voto</th><th>Stato</th></tr>
-            </thead>
-            <tbody>
-              @for (esame of pratica.pianoesami; track esame.id) {
-                <tr>
-                  <td>{{ esame.codice_estero }}</td>
-                  <td>{{ esame.titolo_estero }}</td>
-                  <td>{{ esame.crediti_estero }}</td>
-                  <td>{{ esame.codice_cafoscari }}</td>
-                  <td>{{ esame.titolo_cafoscari }}</td>
-                  <td>{{ esame.crediti_cafoscari }}</td>
-                  <td>
-                    @if (pratica.stato === 'viaggioCompletato') {
-                      <input [(ngModel)]="esame.voto_ottenuto" class="mini-input" placeholder="es. 28/30" style="width:80px" />
-                    } @else {
-                      {{ esame.voto_ottenuto ?? '—' }}
-                    }
-                  </td>
-                  <td><span [class]="'badge ' + getRiconoscimentoBadge(esame.stato_riconoscimento)">{{ esame.stato_riconoscimento ?? 'in_attesa' }}</span></td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          @if (pratica.stato === 'viaggioCompletato') {
-            <button class="btn btn-primary btn-sm" style="margin-top:1rem" (click)="salvaVoti()">✓ Salva voti</button>
-          }
-        </div>
-      }
-
-      <!-- Tab: Documenti -->
-      @if (tabAttiva === 'documenti') {
-        <div class="card">
-          <div class="card-title">Storico Learning Agreement</div>
-          <table>
-            <thead><tr><th>Versione</th><th>Data caricamento</th><th>Stato</th><th></th></tr></thead>
-            <tbody>
-              @for (la of pratica.learning_agreements; track la.id) {
-                <tr>
-                  <td>v{{ la.versione }}</td>
-                  <td>{{ la.data_caricamento | date:'dd/MM/yyyy' }}</td>
-                  <td><span [class]="'badge ' + getLaBadge(la.stato)">{{ la.stato }}</span></td>
-                  <td><a [href]="'/api/files/' + la.filename" class="btn btn-sm" download>⬇ Scarica</a></td>
-                </tr>
-              }
-            </tbody>
-          </table>
-
-          @if (pratica.stato === 'in corso') {
-            <div style="margin-top:1rem">
-              <div class="card-title" style="font-size:14px">Carica nuovo Learning Agreement</div>
-              <div class="upload-box" (click)="laInput.click()">
-                @if (nuovoLaFile) { <span>📄 {{ nuovoLaFile.name }}</span> }
-                @else { <span>📤 Clicca per selezionare il nuovo LA (PDF)</span> }
-              </div>
-              <input #laInput type="file" accept=".pdf" style="display:none" (change)="onNuovoLaSelected($event)" />
-              @if (nuovoLaFile) {
-                <button class="btn btn-primary btn-sm" style="margin-top:8px" (click)="caricaNuovoLa()">Carica nuovo LA</button>
-              }
-            </div>
-          }
-        </div>
-      }
-    } @else {
-      <p class="text-muted">Caricamento pratica...</p>
     }
+  </div>
+
+  <div class="tabs">
+    @for (tab of tabs; track tab.key) {
+      <div class="tab" [class.active]="tabAttiva === tab.key" (click)="tabAttiva = tab.key">{{ tab.label }}</div>
+    }
+  </div>
+
+  @if (tabAttiva === 'esami') {
+    <div class="card">
+      <div class="card-title">Piano Esami e Learning Agreement</div>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Codice OC</th><th>Titolo estero</th><th>CFU</th>
+            <th>Codice EC</th><th>Titolo Ca' Foscari</th><th>CFU</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (esame of pratica.pianoesami; track $index; let i = $index) {
+            <tr>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.codice_estero" name="cod_est_{{i}}" class="mini-input" style="width:80px">
+                } @else { {{ esame.codice_estero }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.titolo_estero" name="tit_est_{{i}}" class="mini-input">
+                } @else { {{ esame.titolo_estero }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.crediti_estero" name="cfu_est_{{i}}" type="number" class="mini-input" style="width:50px">
+                } @else { {{ esame.crediti_estero }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.codice_cafoscari" name="cod_cf_{{i}}" class="mini-input" style="width:80px">
+                } @else { {{ esame.codice_cafoscari }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.titolo_cafoscari" name="tit_cf_{{i}}" class="mini-input">
+                } @else { {{ esame.titolo_cafoscari }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <input [(ngModel)]="esame.crediti_cafoscari" name="cfu_cf_{{i}}" type="number" class="mini-input" style="width:50px">
+                } @else { {{ esame.crediti_cafoscari }} }
+              </td>
+              <td>
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa') {
+                  <button class="btn btn-sm btn-danger" (click)="eliminaEsame(i)">🗑️</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (pratica.stato === 'in attesa' || pratica.stato === 'pre-partenza' || pratica.stato === 'in corso') {
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px" (click)="aggiungiEsame()">+ Aggiungi Esame</button>
+        
+        <div style="margin-top:2rem; border-top: 1px solid #eee; padding-top:1rem;">
+          <div class="card-title" style="font-size:14px">Carica nuovo Learning Agreement aggiornato</div>
+          <div class="upload-box" (click)="laInput.click()">
+            @if (nuovoLaFile) { <span>📄 {{ nuovoLaFile.name }}</span> }
+            @else { <span>📤 Clicca per selezionare il nuovo LA (PDF)</span> }
+          </div>
+          <input #laInput type="file" accept=".pdf" style="display:none" (change)="onNuovoLaSelected($event)" />
+          
+          <div style="margin-top:1rem; display:flex; gap:10px;">
+            <button class="btn btn-primary btn-sm" (click)="salvaTutto()">✓ Salva modifiche e invia LA</button>
+          </div>
+        </div>
+      }
+
+      @if (pratica.stato === 'in corso') {
+        <div style="margin-top:2rem; border-top: 2px solid #e8ecf0; padding-top:1.5rem;">
+          <div class="card-title" style="font-size:15px; color: #1a3a6b;">🎓 Fine Mobilità: Carica Transcript of Records</div>
+          <p class="text-muted" style="font-size: 12px; margin-bottom: 1rem;">
+            Caricando il documento ufficiale, la tua mobilità terminerà e la pratica passerà in fase di Riconoscimento Esami.
+          </p>
+  
+          <div class="upload-box" (click)="transcriptInput.click()" style="border-color: #639922; background-color: #f7fcf3;">
+            @if (transcriptFile) { <span style="font-weight: bold; color: #27500a;">📄 {{ transcriptFile.name }}</span> }
+            @else { <span style="color: #639922;">📤 Clicca per selezionare il Transcript of Records (PDF)</span> }
+          </div>
+          <input #transcriptInput type="file" accept=".pdf" style="display:none" (change)="onTranscriptSelected($event)" />
+          
+          <div style="margin-top:1rem; display:flex; gap:10px;">
+            <button class="btn btn-primary btn-sm" [disabled]="!transcriptFile" (click)="caricaTranscript()">
+              ✓ Invia Transcript e chiudi mobilità
+            </button>
+          </div>
+        </div>
+      }
+    </div> }
+
+  @if (tabAttiva === 'info') {
+    <div class="card">
+      <div class="card-title">Date mobilità</div>
+      
+      @if (pratica.stato === 'in corso') {
+        @if (pratica.data_arrivo && pratica.data_partenza) {
+          <div class="form-row" style="display: flex; gap: 2rem; margin-bottom: 0.5rem;">
+            <div>
+              <span class="text-muted" style="font-size: 13px; display: block;">Data arrivo effettiva</span>
+              <strong style="font-size: 15px;">{{ pratica.data_arrivo | date:'dd/MM/yyyy' }}</strong>
+            </div>
+            <div>
+              <span class="text-muted" style="font-size: 13px; display: block;">Data partenza effettiva</span>
+              <strong style="font-size: 15px;">{{ pratica.data_partenza | date:'dd/MM/yyyy' }}</strong>
+            </div>
+          </div>
+        } 
+        @else {
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Data arrivo effettiva</label>
+              <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data partenza effettiva</label>
+              <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top: 1rem;" (click)="salvaDates()">✓ Salva date</button>
+        }
+      } 
+      @else {
+        <p class="text-muted" style="font-size: 13px;">Le date di mobilità potranno essere inserite quando la pratica passerà allo stato "in corso".</p>
+      }
+    </div> }
+
+} @else {
+  <p class="text-muted">Caricamento pratica...</p>
+}
   `,
   styles: [`
     .status-bar { display: flex; margin-bottom: 1.5rem; }
@@ -196,7 +197,6 @@ export class DettaglioPraticaComponent implements OnInit {
   tabs = [
     { key: 'info', label: 'Informazioni' },
     { key: 'esami', label: 'Esami' },
-    { key: 'documenti', label: 'Documenti' }
   ];
 
   steps = [
@@ -218,7 +218,6 @@ export class DettaglioPraticaComponent implements OnInit {
       this.dataArrivo = p.data_arrivo ?? '';
       this.dataPartenza = p.data_partenza ?? '';
       this.cdr.detectChanges(); // force it
-
     });
   }
 
@@ -280,7 +279,7 @@ export class DettaglioPraticaComponent implements OnInit {
       'in attesa': 'Attesa approvazione LA',
       'pre-partenza': 'Pre-partenza completata',
       'in corso': 'Mobilità in corso',
-      'viaggioCompletato': 'In riconoscimento esami', 
+      'viaggioCompletato': 'In riconoscimento esami',
       'completato': 'Chiusa',
       'annullato': 'Annullata'
     };
@@ -297,5 +296,47 @@ export class DettaglioPraticaComponent implements OnInit {
     if (stato === 'approvato') return 'badge-approved';
     if (stato === 'rifiutato') return 'badge-rejected';
     return 'badge-waiting';
+  }
+
+  salvaTutto() {
+    if (!this.pratica) return;
+
+    // 1. Salva il piano esami modificato tramite input
+    this.praticaService.aggiornaPianoEsami(this.pratica.ida, this.pratica.pianoesami).subscribe({
+      next: () => {
+        // 2. Se c'è un file, caricalo subito dopo
+        if (this.nuovoLaFile) {
+          this.caricaNuovoLa();
+        } else {
+          alert("Modifiche salvate con successo!");
+          window.location.reload();
+        }
+      },
+      error: (err) => alert("Errore nel salvataggio degli esami")
+    });
+  }
+
+  aggiungiEsame() {
+    if (!this.pratica) {
+      console.log("goon");
+      return;
+    }
+    // Creiamo un nuovo esame vuoto (l'ID sarà gestito dal DB)
+    this.pratica.pianoesami.push({
+      id: 0, // 0 segnala al backend che è un nuovo record
+      codice_estero: '',
+      titolo_estero: '',
+      crediti_estero: 0,
+      codice_cafoscari: '',
+      titolo_cafoscari: '',
+      crediti_cafoscari: 0,
+      stato_riconoscimento: 'in_attesa'
+    });
+  }
+
+  eliminaEsame(index: number) {
+    if (confirm("Sei sicuro di voler eliminare questo esame?")) {
+      this.pratica!.pianoesami.splice(index, 1);
+    }
   }
 }

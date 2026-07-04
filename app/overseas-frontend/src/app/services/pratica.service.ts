@@ -65,12 +65,16 @@ export class PraticaService {
 
   caricaLearningAgreement(praticaId: string, file: File): Observable<any> {
     const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/pratiche/${praticaId}/learning-agreement`, formData);
+    formData.append('fileselezionato', file);
+    return this.http.post(`${this.apiUrl}/studente/pratiche/${praticaId}/learning-agreement`, formData);
   }
 
   valutaLearningAgreement(laId: number, decisione: 'approvato' | 'rifiutato', motivazione?: string): Observable<any> {
     return this.http.put(`${this.apiUrl}/docente/learning-agreement/${laId}/valuta`, { decisione, motivazione });
+  }
+
+  scaricaLearningAgreement(praticaId: string, usernameStud: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/docente/studenti/${usernameStud}/applicazione/${praticaId}/learning_agreement`, { responseType: 'blob' });
   }
 
   // ---- TRANSCRIPT ----
@@ -78,7 +82,7 @@ export class PraticaService {
   caricaTranscript(praticaId: string, file: File): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.post(`${this.apiUrl}/pratiche/${praticaId}/transcript`, formData);
+    return this.http.post(`${this.apiUrl}/studente/pratiche/${praticaId}/transcript`, formData);
   }
 
   // ---- ESAMI ----
@@ -90,6 +94,12 @@ export class PraticaService {
   riconosciEsame(esameId: number, decisione: 'approvato' | 'rifiutato'): Observable<any> {
     return this.http.put(`${this.apiUrl}/docente/esami/${esameId}/riconosci`, { decisione });
   }
+
+  
+  aggiornaPianoEsami(ida: string, esami: any[]): Observable<any> {
+    return this.http.put(`${this.apiUrl}/studente/applicazione/${ida}/esami`, esami);
+  }
+
 
   // ---- UFFICIO ----
 
