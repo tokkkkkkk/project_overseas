@@ -60,7 +60,7 @@ db = SQLAlchemy(model_class=Base)
 vede_applicazione = Table(
     "vede_applicazione",
     Base.metadata,
-    db.Column("idin", ForeignKey("applicazione.ida"), primary_key=True),
+    db.Column("ida", ForeignKey("applicazione.ida"), primary_key=True),
     db.Column(
         "username_ufficio", ForeignKey("ufficiooverseas.username"), primary_key=True
     ),
@@ -143,6 +143,7 @@ class studente(db.Model):
     istituti: Mapped[list["institution"]] = relationship(
         "institution", secondary=vede_institution, back_populates="studente_view"
     )
+   
 
 
 class learningagreement(db.Model):
@@ -150,9 +151,8 @@ class learningagreement(db.Model):
     idla: Mapped[str] = mapped_column(primary_key=True, unique=True, nullable=False)
     accettato: Mapped[str] = mapped_column(
         db.Enum(
-            "approvato",
-            "rifiutato",
-            "in attesa",
+            "Si",
+            "No",
             name="esito_accettazione",
             nullable=False,
         )
@@ -176,6 +176,7 @@ class learningagreement(db.Model):
             "data": self.data.isoformat() if self.data else None,
             "motivazione": self.motivazione,
             "username_docente": self.username_docente,
+            "filename": getattr(self, 'percorso_file', None)
         }
 
 
@@ -192,6 +193,19 @@ class pianoesami(db.Model):
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
 
     idapp: Mapped["applicazione"] = relationship("applicazione", back_populates="idpe")
+    
+    def to_dict(self):
+        return {
+            "idpe": self.idpe,
+            "codice_estero": getattr(self, 'codiceinsegnamentoestero', None),
+            "titolo_estero": getattr(self, 'titoloinsegnamentoestero', None),
+            "crediti_estero": getattr(self, 'creditiinsegnamentoestero', None),
+            "codice_cafoscari": getattr(self, 'codiceinsegnamentocafoscari', None),
+            "titolo_cafoscari": getattr(self, 'titoloinsegnamentocafoscari', None),
+            "crediti_cafoscari": getattr(self, 'creditiinsegnamentocafoscari', None),
+            "stato": getattr(self, 'stato', 'in attesa') # Se hai una colonna stato per l'esame
+        }
+
 
 
 class applicazione(db.Model):
@@ -259,6 +273,23 @@ class applicazione(db.Model):
             "datapartenza": (
                 self.datapartenza.isoformat() if self.datapartenza else None
             ),
+            
+            "periodo": self.periodo_previsto, 
+            
+            "studente": {
+                "nome": self.studente_rel.utente.nome if self.studente_rel else self.username_studente,
+                "cognome": self.studente_rel.utente.cognome if self.studente_rel else ""
+            },
+            
+            "istituto": {
+                "nome": self.institution_rel.nome if self.institution_rel else "Istituto sconosciuto"
+            },
+            
+            # CORRETTO: È un oggetto singolo, quindi lo mettiamo direttamente dentro una lista [ ]
+            "learning_agreements": [self.learning_agreement.to_dict()] if self.learning_agreement else [],
+            
+            # CORRETTO: 'idpe' è già una lista (Mapped[List["pianoesami"]]), quindi il ciclo va benissimo
+            "mapping_esami": [e.to_dict() for e in self.idpe] if self.idpe else []
         }
 
 
@@ -286,4 +317,6 @@ class institution(db.Model):
             "idin": self.idin,
             "nome": self.nome,
             "paese": self.paese,
+            "città": self.citta,
+            "citta": self.citta,
         }

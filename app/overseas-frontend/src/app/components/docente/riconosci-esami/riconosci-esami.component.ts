@@ -1,5 +1,5 @@
 // components/docente/riconosci-esami/riconosci-esami.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
@@ -34,7 +34,7 @@ import { PraticaMobilita, MappingEsame } from '../../../models/models';
         <table>
           <thead><tr><th>Esame estero</th><th>Equivalente Ca' Foscari</th><th>Voto</th><th>Data</th><th>Decisione</th></tr></thead>
           <tbody>
-            @for (esame of pratica.mapping_esami; track esame.id) {
+            @for (esame of pratica.pianoesami; track esame.id) {
               <tr>
                 <td>{{ esame.titolo_estero }} ({{ esame.codice_estero }})</td>
                 <td>{{ esame.titolo_cafoscari }}</td>
@@ -71,11 +71,15 @@ export class RiconosciEsamiComponent implements OnInit {
   pratica: PraticaMobilita | null = null;
   messaggio = '';
 
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router) {}
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
-    this.praticaService.getPraticaById(id).subscribe(p => this.pratica = p);
+    const id = String(this.route.snapshot.paramMap.get('id'));
+    this.praticaService.getPraticaDocenteById(id).subscribe(p => {
+      this.pratica = p;
+      console.log(this.pratica);
+      this.cdr.detectChanges();
+    });
   }
 
   decidi(esame: MappingEsame, decisione: 'approvato' | 'rifiutato') {
@@ -84,7 +88,7 @@ export class RiconosciEsamiComponent implements OnInit {
 
   confermaRiconoscimento() {
     if (!this.pratica) return;
-    const richieste = this.pratica.mapping_esami
+    const richieste = this.pratica.pianoesami
       .filter(e => e.id && e.stato_riconoscimento)
       .map(e => this.praticaService.riconosciEsame(e.id!, e.stato_riconoscimento as 'approvato' | 'rifiutato'));
 

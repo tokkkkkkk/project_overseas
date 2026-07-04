@@ -2,7 +2,7 @@
 // Interfacce TypeScript che rispecchiano le tabelle del database
 
 export interface Utente {
-  username:string;
+  username: string;
   nome: string;
   cognome: string;
   email: string;
@@ -46,12 +46,13 @@ export interface TranscriptOfRecords {
 }
 
 export type StatoPratica =
-  | 'creata'
-  | 'in_attesa_approvazione_la'
-  | 'pre_partenza_completata'
-  | 'mobilita_in_corso'
-  | 'in_riconoscimento_esami'
-  | 'chiusa';
+  | "creato"
+  | "in attesa"
+  | "pre-partenza"
+  | "in corso"
+  | "completato"
+  | "annullato"
+  | "viaggioCompletato";
 
 export interface PraticaMobilita {
   ida: string;
@@ -65,7 +66,7 @@ export interface PraticaMobilita {
   studente: Utente;
   docente: Utente;
   istituto: IstitutoOspitante;
-  mapping_esami: MappingEsame[];
+  pianoesami: MappingEsame[];
   learning_agreements: LearningAgreement[];
   transcript?: TranscriptOfRecords;
 }

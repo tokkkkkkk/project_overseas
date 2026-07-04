@@ -1,5 +1,5 @@
 // components/login/login.component.ts
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -73,7 +73,7 @@ export class LoginComponent {
   loading = false;
   checking = true; // nuovo
 
-  constructor(private auth: AuthService, private router: Router) {
+  constructor(private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
     if (this.auth.isLoggedIn()) {
       const ruolo = this.auth.getRuolo();
       if (ruolo === 'studente') this.router.navigate(['/studente/dashboard']);
@@ -102,6 +102,8 @@ export class LoginComponent {
       error: () => {
         this.errore = 'Username o password errati';
         this.loading = false;
+        this.cdr.detectChanges();
+        //private cdr: ChangeDetectorRef();
       }
     });
   }

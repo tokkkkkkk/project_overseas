@@ -1,6 +1,6 @@
 // components/studente/dashboard/dashboard.component.ts
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PraticaService } from '../../../services/pratica.service';
 import { PraticaMobilita } from '../../../models/models';
@@ -10,6 +10,7 @@ import { PraticaMobilita } from '../../../models/models';
   standalone: true,
   imports: [RouterLink, CommonModule],
   template: `
+  
     <div class="page-header">
       <div>
         <h1 class="page-title">Le mie pratiche</h1>
@@ -26,15 +27,15 @@ import { PraticaMobilita } from '../../../models/models';
       </div>
       <div class="metric-card">
         <div class="metric-label">In corso</div>
-        <div class="metric-value blue">{{ contaStato('mobilita_in_corso') }}</div>
+        <div class="metric-value blue">{{ contaStato('in corso') }}</div>
       </div>
       <div class="metric-card">
-        <div class="metric-label">In approvazione</div>
-        <div class="metric-value amber">{{ contaStato('in_attesa_approvazione_la') }}</div>
+        <div class="metric-label">In approvazione LA</div>
+        <div class="metric-value amber">{{ contaStato('in attesa') }}</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">Chiuse</div>
-        <div class="metric-value green">{{ contaStato('chiusa') }}</div>
+        <div class="metric-value green">{{ contaStato('completato') }}</div>
       </div>
     </div>
 
@@ -51,7 +52,7 @@ import { PraticaMobilita } from '../../../models/models';
           <table>
             <thead>
               <tr>
-                <th>Anno Acc.</th><th>Istituto</th><th>Paese</th><th>Periodo</th><th>Stato</th><th>Docente</th><th>Azioni</th>
+                <th>Anno Acc.</th><th>Istituto</th><th>Paese</th><th>Periodo</th><th>Docente</th><th>Stato</th><th>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -65,6 +66,9 @@ import { PraticaMobilita } from '../../../models/models';
                   <td><span [class]="'badge ' + getBadgeClass(pratica.stato)">{{ getStatoLabel(pratica.stato) }}</span></td>
                   <td>
                     <a [routerLink]="['/studente/pratica', pratica.ida]" class="btn btn-sm">Dettaglio</a>
+                    @if (pratica.stato === 'creato' ){
+                      <button (click)="cancellaPratica(pratica.ida)" class="btn btn-sm" type="button">🗑️</button>
+                    }
                   </td>
                 </tr>
               }
@@ -80,7 +84,7 @@ export class StudenteDashboardComponent implements OnInit {
   pratiche: PraticaMobilita[] = [];
   loading = true;
 
-  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef) { }
+  constructor(private praticaService: PraticaService, private cdr: ChangeDetectorRef, private router: Router) { }
 
   ngOnInit() {
     this.praticaService.getMiePratiche().subscribe({
@@ -89,7 +93,6 @@ export class StudenteDashboardComponent implements OnInit {
         this.pratiche = data;
         this.loading = false;
         this.cdr.detectChanges(); // force it
-
       },
       error: () => { this.loading = false; }
     });
@@ -101,25 +104,50 @@ export class StudenteDashboardComponent implements OnInit {
 
   getBadgeClass(stato: string): string {
     const map: Record<string, string> = {
-      'creata': 'badge-created',
-      'in_attesa_approvazione_la': 'badge-waiting',
-      'pre_partenza_completata': 'badge-approved',
-      'mobilita_in_corso': 'badge-progress',
-      'in_riconoscimento_esami': 'badge-waiting',
-      'chiusa': 'badge-closed'
+      'creato': 'badge-created',
+      'in attesa': 'badge-waiting',
+      'pre-partenza': 'badge-approved',
+      'in corso': 'badge-progress',
+      'viaggioCompletato': 'badge-waiting', // Assuming this is when exams are being recognized
+      'completato': 'badge-closed',
+      'annullato': 'badge-danger' // Add a red badge for cancelled!
     };
     return map[stato] ?? 'badge-created';
   }
 
   getStatoLabel(stato: string): string {
     const map: Record<string, string> = {
-      'creata': 'Creata',
-      'in_attesa_approvazione_la': 'Attesa approvazione LA',
-      'pre_partenza_completata': 'Pre-partenza completata',
-      'mobilita_in_corso': 'Mobilità in corso',
-      'in_riconoscimento_esami': 'In riconoscimento esami',
-      'chiusa': 'Chiusa'
+      'creato': 'Creata',
+      'in attesa': 'Attesa approvazione LA',
+      'pre-partenza': 'Pre-partenza completata',
+      'in corso': 'Mobilità in corso',
+      'viaggioCompletato': 'In riconoscimento esami',
+      'completato': 'Chiusa',
+      'annullato': 'Annullata'
     };
     return map[stato] ?? stato;
+  }
+
+  cancellaPratica(idDaCancellare: string) {
+    const confermato = confirm('Sei sicuro di voler eliminare definitivamente questa pratica?');
+
+    if (confermato) {
+
+      this.praticaService.eliminaPratica(idDaCancellare).subscribe({
+        next: () => {
+
+
+          // Filtriamo l'array
+          this.pratiche = this.pratiche.filter(p => p.ida !== idDaCancellare);
+
+
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('ERRORE DAL BACKEND:', err);
+          alert('Il backend ha rifiutato l\'eliminazione. Guarda la console.');
+        }
+      });
+    }
   }
 }

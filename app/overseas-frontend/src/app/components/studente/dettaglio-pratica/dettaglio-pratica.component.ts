@@ -1,5 +1,5 @@
 // components/studente/dettaglio-pratica/dettaglio-pratica.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -39,22 +39,38 @@ import { PraticaMobilita } from '../../../models/models';
 
       <!-- Tab: Informazioni -->
       @if (tabAttiva === 'info') {
-        <div class="card">
-          <div class="card-title">Date mobilità</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Data arrivo effettiva</label>
-              <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Data partenza effettiva</label>
-              <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
-            </div>
+        @if (pratica.stato === 'in corso') {
+          <div class="card">
+            <div class="card-title">Date mobilità</div>
+            @if (pratica.data_arrivo && pratica.data_partenza) {
+              <div class="form-row" style="display: flex; gap: 2rem; margin-bottom: 0.5rem;">
+                <div>
+                  <span class="text-muted" style="font-size: 13px; display: block;">Data arrivo effettiva</span>
+                  <strong style="font-size: 15px;">{{ pratica.data_arrivo | date:'dd/MM/yyyy' }}</strong>
+                </div>
+                <div>
+                  <span class="text-muted" style="font-size: 13px; display: block;">Data partenza effettiva</span>
+                  <strong style="font-size: 15px;">{{ pratica.data_partenza | date:'dd/MM/yyyy' }}</strong>
+                </div>
+              </div>
+            } 
+            @else {
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Data arrivo effettiva</label>
+                  <input type="date" class="form-control" [(ngModel)]="dataArrivo" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Data partenza effettiva</label>
+                  <input type="date" class="form-control" [(ngModel)]="dataPartenza" />
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm" (click)="salvaDates()">✓ Salva date</button>
+            }
           </div>
-          <button class="btn btn-primary btn-sm" (click)="salvaDates()">✓ Salva date</button>
-        </div>
+        }
 
-        @if (pratica.stato === 'mobilita_in_corso' || pratica.stato === 'pre_partenza_completata') {
+        @if (pratica.stato === 'in corso' || pratica.stato === 'pre-partenza') {
           <div class="card">
             <div class="card-title">Transcript of Records</div>
             @if (pratica.transcript) {
@@ -89,7 +105,7 @@ import { PraticaMobilita } from '../../../models/models';
               <tr><th>Codice OC</th><th>Titolo estero</th><th>CFU</th><th>Codice EC</th><th>Titolo Ca' Foscari</th><th>CFU</th><th>Voto</th><th>Stato</th></tr>
             </thead>
             <tbody>
-              @for (esame of pratica.mapping_esami; track esame.id) {
+              @for (esame of pratica.pianoesami; track esame.id) {
                 <tr>
                   <td>{{ esame.codice_estero }}</td>
                   <td>{{ esame.titolo_estero }}</td>
@@ -98,7 +114,7 @@ import { PraticaMobilita } from '../../../models/models';
                   <td>{{ esame.titolo_cafoscari }}</td>
                   <td>{{ esame.crediti_cafoscari }}</td>
                   <td>
-                    @if (pratica.stato === 'in_riconoscimento_esami') {
+                    @if (pratica.stato === 'viaggioCompletato') {
                       <input [(ngModel)]="esame.voto_ottenuto" class="mini-input" placeholder="es. 28/30" style="width:80px" />
                     } @else {
                       {{ esame.voto_ottenuto ?? '—' }}
@@ -109,7 +125,7 @@ import { PraticaMobilita } from '../../../models/models';
               }
             </tbody>
           </table>
-          @if (pratica.stato === 'in_riconoscimento_esami') {
+          @if (pratica.stato === 'viaggioCompletato') {
             <button class="btn btn-primary btn-sm" style="margin-top:1rem" (click)="salvaVoti()">✓ Salva voti</button>
           }
         </div>
@@ -133,7 +149,7 @@ import { PraticaMobilita } from '../../../models/models';
             </tbody>
           </table>
 
-          @if (pratica.stato === 'mobilita_in_corso') {
+          @if (pratica.stato === 'in corso') {
             <div style="margin-top:1rem">
               <div class="card-title" style="font-size:14px">Carica nuovo Learning Agreement</div>
               <div class="upload-box" (click)="laInput.click()">
@@ -184,24 +200,25 @@ export class DettaglioPraticaComponent implements OnInit {
   ];
 
   steps = [
-    { key: 'creata', label: 'Creata' },
-    { key: 'in_attesa_approvazione_la', label: 'LA approvato' },
-    { key: 'pre_partenza_completata', label: 'Pre-partenza' },
-    { key: 'mobilita_in_corso', label: 'In corso' },
-    { key: 'in_riconoscimento_esami', label: 'Riconoscimento' },
-    { key: 'chiusa', label: 'Chiusa' }
+    { key: 'creato', label: 'Creata' },
+    { key: 'in attesa', label: 'LA approvato' },
+    { key: 'pre-partenza', label: 'Pre-partenza' },
+    { key: 'in corso', label: 'In corso' },
+    { key: 'in riconoscimento', label: 'Riconoscimento' },
+    { key: 'completato', label: 'Chiusa' }
   ];
 
-  statiOrder = ['creata', 'in_attesa_approvazione_la', 'pre_partenza_completata', 'mobilita_in_corso', 'in_riconoscimento_esami', 'chiusa'];
-
-  constructor(private route: ActivatedRoute, private praticaService: PraticaService) { }
+  statiOrder = ['creato', 'in attesa', 'pre-partenza', 'in corso', 'in riconoscimento', 'completato'];
+  constructor(private route: ActivatedRoute, private praticaService: PraticaService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+    const id = String(this.route.snapshot.paramMap.get('id'));
     this.praticaService.getPraticaById(id).subscribe(p => {
       this.pratica = p;
       this.dataArrivo = p.data_arrivo ?? '';
       this.dataPartenza = p.data_partenza ?? '';
+      this.cdr.detectChanges(); // force it
+
     });
   }
 
@@ -241,16 +258,32 @@ export class DettaglioPraticaComponent implements OnInit {
 
   salvaVoti() {
     if (!this.pratica) return;
-    this.praticaService.aggiornaVotiEsami(this.pratica.ida, this.pratica.mapping_esami).subscribe();
+    this.praticaService.aggiornaVotiEsami(this.pratica.ida, this.pratica.pianoesami).subscribe();
   }
 
   getBadgeClass(stato: string): string {
-    const map: Record<string, string> = { 'creata': 'badge-created', 'in_attesa_approvazione_la': 'badge-waiting', 'pre_partenza_completata': 'badge-approved', 'mobilita_in_corso': 'badge-progress', 'in_riconoscimento_esami': 'badge-waiting', 'chiusa': 'badge-closed' };
+    const map: Record<string, string> = {
+      'creato': 'badge-created',
+      'in attesa': 'badge-waiting',
+      'pre-partenza': 'badge-approved',
+      'in corso': 'badge-progress',
+      'viaggioCompletato': 'badge-waiting', // Assuming this is when exams are being recognized
+      'completato': 'badge-closed',
+      'annullato': 'badge-danger' // Add a red badge for cancelled!
+    };
     return map[stato] ?? 'badge-created';
   }
 
   getStatoLabel(stato: string): string {
-    const map: Record<string, string> = { 'creata': 'Creata', 'in_attesa_approvazione_la': 'Attesa LA', 'pre_partenza_completata': 'Pre-partenza ok', 'mobilita_in_corso': 'In corso', 'in_riconoscimento_esami': 'In riconoscimento', 'chiusa': 'Chiusa' };
+    const map: Record<string, string> = {
+      'creato': 'Creata',
+      'in attesa': 'Attesa approvazione LA',
+      'pre-partenza': 'Pre-partenza completata',
+      'in corso': 'Mobilità in corso',
+      'viaggioCompletato': 'In riconoscimento esami', 
+      'completato': 'Chiusa',
+      'annullato': 'Annullata'
+    };
     return map[stato] ?? stato;
   }
 

@@ -1,5 +1,5 @@
 // components/register/register.component.ts
-import { Component } from '@angular/core';
+import { Component,ChangeDetectorRef  } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -105,7 +105,7 @@ export class RegisterComponent {
 
   private apiUrl = 'http://localhost:5000/api';
 
-  constructor(private http: HttpClient, private router: Router) { }
+  constructor(private http: HttpClient, private router: Router, private cdr: ChangeDetectorRef) { }
 
   registra() {
     this.errore = '';
@@ -128,7 +128,7 @@ export class RegisterComponent {
     
 
 
-    this.http.post(`${this.apiUrl}/register`, {
+    this.http.post(`${this.apiUrl}/auth/register`, {
       username: this.username,
       password: this.password,
       nome: this.nome,
@@ -143,6 +143,7 @@ export class RegisterComponent {
       error: (err) => {
         this.errore = err.error?.msg ?? 'Errore durante la registrazione';
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }

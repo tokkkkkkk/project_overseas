@@ -66,6 +66,12 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [
+              "localhost",
+              "192.168.1.116"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "overseas-frontend:build:production"
