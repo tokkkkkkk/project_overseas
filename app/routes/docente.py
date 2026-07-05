@@ -163,10 +163,13 @@ def get_dettaglio_app(ida):
                 "codice_cafoscari": e.codiceinsegnamentocafoscari,
                 "titolo_cafoscari": e.titoloinsegnamentocafoscari,
                 "crediti_cafoscari": e.creditiinsegnamentocafoscari,
-                "stato": e.stato
+                "stato": e.stato,
+                "voto_ottenuto": e.voto_ottenuto, 
+                "data_superamento": e.data_superamento.isoformat() if e.data_superamento else None
             }
             for e in esami
         ]
+        
     }
     
     return jsonify(dettaglio), 200
@@ -278,10 +281,6 @@ def riconosci_esame(idpe):
 
     dati = request.json
     decisione = dati.get("decisione")  # Riceverà 'approvato' o 'rifiutato'
-    
-    
-    
-
     esame = (
         db.session.execute(select(pianoesami).where(pianoesami.idpe == idpe))
         .scalars()

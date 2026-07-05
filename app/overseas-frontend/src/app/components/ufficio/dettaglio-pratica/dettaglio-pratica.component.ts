@@ -144,22 +144,6 @@ export class UfficioDettaglioPraticaComponent implements OnInit {
     return this.pratica.pianoesami.every(e => e.stato_riconoscimento === 'approvato');
   }
 
-  completaPrePartenza() {
-    if (!this.pratica) return;
-    this.praticaService.completaPrePartenza(this.pratica.ida).subscribe(() => {
-      this.messaggio = 'Fase pre-partenza completata!';
-      setTimeout(() => this.router.navigate(['/ufficio/dashboard']), 1500);
-    });
-  }
-
-  chiudiPratica() {
-    if (!this.pratica) return;
-    this.praticaService.chiudiPratica(this.pratica.ida).subscribe(() => {
-      this.messaggio = 'Pratica chiusa con successo!';
-      setTimeout(() => this.router.navigate(['/ufficio/dashboard']), 1500);
-    });
-  }
-
   getBadgeClass(s: string) {
     const m: Record<string, string> = { 'creato': 'badge-created', 'in attesa': 'badge-waiting', 'pre-partenza': 'badge-approved', 'in corso': 'badge-progress', 'viaggioCompletato': 'badge-waiting', 'chiusa': 'badge-closed', 'annullata': 'badge-rejected' };
     return m[s] ?? 'badge-created';

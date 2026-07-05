@@ -503,3 +503,26 @@ def aggiorna_piano_esami(ida):
         )
     print("DEBUG: commit completato")
     return jsonify({"msg": "Piano esami aggiornato!"}), 200
+
+
+@bp_studente.route("/applicazione/<string:ida>/registra-voti", methods=["PUT"])
+@jwt_required()
+def registra_voti(ida):
+    auth = require_role("studente")
+    if auth: return auth
+    
+    # 1. Recupera i dati inviati dal frontend (lista di esami con voti)
+    voti_ricevuti = request.json  # es: [{"idpe": 1, "voto": "30", "data": "2026-07-01"}, ...]
+    
+    for item in voti_ricevuti:
+        idpe = item.get("idpe")
+        esame = db.session.get(pianoesami, idpe)
+        
+        # Verifica che l'esame appartenga davvero a questa applicazione
+        if esame and esame.ida == ida:
+            esame.voto_ottenuto = item.get("voto")
+            # Converti la stringa data in oggetto date se necessario
+            esame.data_superamento = item.get("data") 
+            
+    db.session.commit()
+    return jsonify({"msg": "Voti aggiornati con successo"}), 200

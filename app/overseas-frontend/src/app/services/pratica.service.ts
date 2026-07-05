@@ -87,9 +87,9 @@ export class PraticaService {
 
   // ---- ESAMI ----
 
-  aggiornaVotiEsami(praticaId: string, esami: MappingEsame[]): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/esami`, { esami });
-  }
+  aggiornaVotiEsami(praticaId: string, voti: any[]): Observable<any> {
+  return this.http.put(`${this.apiUrl}/studente/applicazione/${praticaId}/registra-voti`, voti);
+   }
 
   riconosciEsame(esameId: number, decisione: 'approvato' | 'rifiutato'): Observable<any> {
     return this.http.put(`${this.apiUrl}/docente/esami/${esameId}/riconosci`, { decisione });
@@ -98,17 +98,6 @@ export class PraticaService {
 
   aggiornaPianoEsami(ida: string, esami: any[]): Observable<any> {
     return this.http.put(`${this.apiUrl}/studente/applicazione/${ida}/esami`, esami);
-  }
-
-
-  // ---- UFFICIO ----
-
-  completaPrePartenza(praticaId: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/pre-partenza`, {});
-  }
-
-  chiudiPratica(praticaId: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/pratiche/${praticaId}/chiudi`, {});
   }
 
   // ---- ISTITUTI E DOCENTI ----

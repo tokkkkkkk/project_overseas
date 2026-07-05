@@ -211,6 +211,8 @@ class pianoesami(db.Model):
     codiceinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
     titoloinsegnamentocafoscari: Mapped[str] = mapped_column(nullable=False)
     creditiinsegnamentocafoscari: Mapped[int] = mapped_column(nullable=False)
+    voto_ottenuto: Mapped[str] = mapped_column(String(10), nullable=True)
+    data_superamento: Mapped[date] = mapped_column(nullable=True)
     stato: Mapped[str] = mapped_column(String(50), default='in attesa')
     ida: Mapped[int] = mapped_column(ForeignKey("applicazione.ida"))
 
