@@ -92,6 +92,7 @@ vede_institution = Table(
 )
 
 
+# Rappresenta un utente generico del sistema, usato per autenticazione e profilo.
 class utenti(UserMixin, db.Model):
     __tablename__ = "utenti"
 
@@ -107,6 +108,7 @@ class utenti(UserMixin, db.Model):
         return str(self.username)
 
 
+# Rappresenta un docente referente che può valutare le pratiche degli studenti.
 class docentireferenti(db.Model):
     __tablename__ = "docentireferenti"
 
@@ -129,6 +131,7 @@ class docentireferenti(db.Model):
         }
 
 
+# Rappresenta l'ufficio overseas che gestisce le pratiche e gli istituti.
 class ufficiooverseas(db.Model):
     __tablename__ = "ufficiooverseas"
     username: Mapped[str] = mapped_column(
@@ -147,6 +150,7 @@ class ufficiooverseas(db.Model):
     )
 
 
+# Rappresenta uno studente che richiede una mobilità all'estero.
 class studente(db.Model):
     __tablename__ = "studente"
 
@@ -163,6 +167,7 @@ class studente(db.Model):
     )
 
 
+# Contiene il learning agreement caricato dallo studente e valutato dal docente.
 class learningagreement(db.Model):
     __tablename__ = "learningagreement"
     idla: Mapped[str] = mapped_column(
@@ -201,6 +206,7 @@ class learningagreement(db.Model):
         }
 
 
+# Rappresenta il piano degli esami previsto nella pratica di mobilità.
 class pianoesami(db.Model):
     __tablename__ = "pianoesami"
 
@@ -233,6 +239,7 @@ class pianoesami(db.Model):
         }
 
 
+# Rappresenta la pratica principale di mobilità dello studente.
 class applicazione(db.Model):
     __tablename__ = "applicazione"
 
@@ -325,6 +332,7 @@ class applicazione(db.Model):
         }
 
 
+# Rappresenta un istituto estero collegato alla mobilità.
 class institution(db.Model):
     __tablename__ = "institution"
 
@@ -353,6 +361,7 @@ class institution(db.Model):
             "citta": self.citta,
         }
         
+# Mantiene una copia di backup del piano degli esami prima di eventuali modifiche.
 class pianoesami_backup(db.Model):
     __tablename__ = "pianoesami_backup"
     

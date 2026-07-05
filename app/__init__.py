@@ -50,6 +50,3 @@ def create_app(test_config=None):
     }})
 
     return app
-
-    # Dove rimandare gli utenti non loggati
-    # login_manager.login_view = "auth.login"

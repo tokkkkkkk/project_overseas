@@ -28,6 +28,7 @@ ALLOWED_EXTENSIONS = {"pdf"}
 
 
 def require_role(expected_role):
+    """Controlla che il token dello studente abbia il ruolo richiesto."""
     claims = get_jwt()
     allowed_roles = (
         {expected_role} if isinstance(expected_role, str) else set(expected_role)
@@ -36,6 +37,7 @@ def require_role(expected_role):
         return jsonify({"msg": "Accesso non autorizzato"}), 403
 
 
+# Restituisce tutte le pratiche associate allo studente autenticato.
 @bp_studente.route("/pratiche", methods=["GET"])
 @jwt_required()
 def get_my_app():
@@ -51,12 +53,13 @@ def get_my_app():
         .join(utenti, applicazione.username_docente == utenti.username)
     )
     app = db.session.execute(query).all()
-    # messo all al posto di first, dato che angular si aspetta una lista
+    # La frontend si aspetta una lista di pratiche, quindi restituiamo sempre un elenco.
 
     if not app:
         return jsonify([]), 200
 
     lista_pratiche = []
+    # Costruisce il formato dei dati che il frontend usa per mostrare le pratiche.
     for app, ist, doc in app:
         lista_pratiche.append(
             {
@@ -84,6 +87,7 @@ studente = aliased(utenti)
 docente = aliased(utenti)
 
 
+# Aggiorna i dati di viaggio di una pratica, come data di partenza e data di arrivo.
 @bp_studente.route("/pratiche/<ida>", methods=["PUT"])
 @jwt_required()
 def update_applicazione_studente(ida):
@@ -101,11 +105,12 @@ def update_applicazione_studente(ida):
         if not risultati:
             return jsonify({"error": "Pratica non trovata"}), 404
 
+        # Se il frontend invia una nuova data di partenza, la salva nel record.
         if "data_partenza" in dati:
             val_p = dati["data_partenza"]
             risultati.datapartenza = val_p if val_p else None
 
-        # 2. Handle Arrivo: Same exact logic
+        # Se il frontend invia una nuova data di arrivo, la salva nello stesso modo.
         if "data_arrivo" in dati:
             val_a = dati["data_arrivo"]
             risultati.dataarrivo = val_a if val_a else None
@@ -126,6 +131,7 @@ def update_applicazione_studente(ida):
     return jsonify({"msg": "suiccess"}), 200
 
 
+# Mostra il dettaglio completo di una pratica, inclusi istituto, docente, studente ed esami.
 @bp_studente.route("/pratiche/<ida>", methods=["GET"])
 @jwt_required()
 def dettaglio_applicazione_studente(ida):
@@ -152,8 +158,7 @@ def dettaglio_applicazione_studente(ida):
     stud = risultati[0][3]
     doc = risultati[0][4]
 
-    # 3. Estrai l'elenco di TUTTI gli esami da TUTTE le righe
-    # riga[2] corrisponde a 'pianoesami' nel tuo select(...) originale
+    # Unisce i dati della pratica con tutti gli esami restituiti dalla query.
     tutti_gli_esami = [row[2] for row in risultati]
 
     dettaglio = {
@@ -196,6 +201,7 @@ def dettaglio_applicazione_studente(ida):
     return jsonify(dettaglio), 200
 
 
+# Crea una nuova pratica e prepara il relativo piano di esami.
 @bp_studente.route("/pratiche", methods=["POST"])
 @jwt_required()
 def create_myapp():
@@ -211,6 +217,7 @@ def create_myapp():
     periodo = dati["periodo"]
     docente = dati["docente_id"]
 
+    # Crea la pratica iniziale con lo stato di attesa.
     app = applicazione(
         ida=nuovo_ida,
         stato="in attesa",
@@ -226,6 +233,7 @@ def create_myapp():
     db.session.add(app)
     db.session.flush()
 
+    # Aggiunge gli esami ricevuti dal frontend al nuovo record della pratica.
     nuovi_esami = [
         pianoesami(
             ida=nuovo_ida,
@@ -249,6 +257,7 @@ def create_myapp():
         return jsonify({"error": "Errore interno durante l'eliminazione"}), 500
 
 
+# Carica un learning agreement per una pratica e lo salva nella cartella dedicata.
 @bp_studente.route("/pratiche/<ida>/learning-agreement", methods=["POST"])
 @jwt_required()
 def get_my_la(ida):
@@ -265,10 +274,12 @@ def get_my_la(ida):
     if file.filename == "":
         return jsonify({"msg": "Nessun file selezionato"}), 400
 
+    # Salva il file caricato in modo sicuro nella cartella delle uploads.
     filename = secure_filename(f"{nuovo_idla}_{file.filename}")
     full_path = os.path.join(CARTELLA_UPLOADS, filename)
     file.save(full_path)
 
+    # Crea il record del learning agreement e lo collega alla pratica.
     la = learningagreement(
         idla=nuovo_idla,
         accettato=None,
@@ -291,6 +302,7 @@ def get_my_la(ida):
     return jsonify({"msg": "Learning Agreement caricato con successo"}), 200
 
 
+# Restituisce l'elenco degli istituti disponibili per lo studente o l'ufficio.
 @bp_studente.route("/istituti", methods=["GET"])
 @jwt_required()
 def get_my_institution():
@@ -303,6 +315,7 @@ def get_my_institution():
     return jsonify([istituti.to_dict() for istituti in institution_db]), 200
 
 
+# Restituisce i docenti referenti disponibili nel sistema.
 @bp_studente.route("/docente", methods=["GET"])
 @jwt_required()
 def get_my_docente():
@@ -315,6 +328,7 @@ def get_my_docente():
     return jsonify([docenti.to_dict() for docenti in docentireferenti_db]), 200
 
 
+# Elimina una pratica e i dati collegati, compreso il learning agreement eventuale.
 @bp_studente.route("/elimina/<ida>", methods=["DELETE"])
 @jwt_required()
 def delete_pratica(ida):
@@ -359,6 +373,7 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# Carica il transcript di una pratica, se la pratica è in uno stato valido.
 @bp_studente.route("/pratiche/<string:ida>/transcript", methods=["POST"])
 @jwt_required()
 def carica_transcript(ida):
@@ -368,7 +383,7 @@ def carica_transcript(ida):
 
     studente_id = get_jwt_identity()
 
-    # Verifica che la pratica appartenga allo studente
+    # Verifica che la pratica appartenga davvero allo studente autenticato.
     pratica = (
         db.session.execute(
             select(applicazione).where(
@@ -393,7 +408,7 @@ def carica_transcript(ida):
     if file.filename == "" or not allowed_file(file.filename):
         return jsonify({"msg": "File non valido, deve essere PDF"}), 400
 
-    # Salva il file
+    # Salva il file nel percorso dedicato alle uploads.
     filename = secure_filename(f"transcript_{ida}_{file.filename}")
     filepath = os.path.join(CARTELLA_UPLOADS, filename)
     os.makedirs(CARTELLA_UPLOADS, exist_ok=True)
@@ -410,6 +425,7 @@ def carica_transcript(ida):
     )
 
 
+# Aggiorna il piano degli esami di una pratica, creando un backup prima delle modifiche.
 @bp_studente.route("/applicazione/<string:ida>/esami", methods=["PUT"])
 @jwt_required()
 def aggiorna_piano_esami(ida):
@@ -431,12 +447,12 @@ def aggiorna_piano_esami(ida):
             .all()
         )
 
-        # Elimina backup precedente se esiste
+        # Elimina eventuali backup precedenti prima di crearne uno nuovo.
         db.session.execute(
             delete(pianoesami_backup).where(pianoesami_backup.ida == ida)
         )
 
-        # Crea nuovo backup
+        # Salva gli esami attuali nel backup come riferimento.
         for e in esami_correnti:
             backup = pianoesami_backup(
                 ida=e.ida,
@@ -461,14 +477,14 @@ def aggiorna_piano_esami(ida):
             if (e.get("idpe") or e.get("id"))
         ]
 
-        # 2. Elimina dal DB gli esami non più presenti (usando 'ida' come FK)
+        # Elimina dal database gli esami che non compaiono più nella nuova lista.
         db.session.execute(
             delete(pianoesami).where(
                 pianoesami.ida == ida, pianoesami.idpe.not_in(ids_ricevuti)
             )
         )
 
-        # 3. Aggiorna o Crea gli esami
+        # Aggiorna o crea gli esami in base ai dati ricevuti dal frontend.
         for item in esami_ricevuti:
             idpe = item.get("idpe") or item.get("id")
             print(f"DEBUG item: {item}")
@@ -505,20 +521,21 @@ def aggiorna_piano_esami(ida):
     return jsonify({"msg": "Piano esami aggiornato!"}), 200
 
 
+# Registra i voti inseriti dallo studente per gli esami della pratica.
 @bp_studente.route("/applicazione/<string:ida>/registra-voti", methods=["PUT"])
 @jwt_required()
 def registra_voti(ida):
     auth = require_role("studente")
     if auth: return auth
     
-    # 1. Recupera i dati inviati dal frontend (lista di esami con voti)
+    # Recupera la lista di voti inviata dal frontend per gli esami della pratica.
     voti_ricevuti = request.json  # es: [{"idpe": 1, "voto": "30", "data": "2026-07-01"}, ...]
     
     for item in voti_ricevuti:
         idpe = item.get("idpe")
         esame = db.session.get(pianoesami, idpe)
         
-        # Verifica che l'esame appartenga davvero a questa applicazione
+        # Verifica che l'esame appartenga davvero a questa pratica prima di salvarne il voto.
         if esame and esame.ida == ida:
             esame.voto_ottenuto = item.get("voto")
             # Converti la stringa data in oggetto date se necessario

@@ -22,6 +22,7 @@ CARTELLA_UPLOADS = os.path.join(os.getcwd(), "app", "static", "uploads")
 
 
 def require_role(expected_role):
+    """Controlla che il token del docente abbia il ruolo atteso."""
     claims = get_jwt()
     if claims.get("ruolo") != expected_role:
         return jsonify({"msg": "Accesso non autorizzato"}), 403
@@ -33,6 +34,8 @@ bp_docente = Blueprint(
 )
 
 
+# Restituisce la lista degli studenti collegati al docente corrente.
+# Viene usata per mostrare la schermata con le pratiche assegnate a quel docente.
 @bp_docente.route("/studenti", methods=["GET"])
 @jwt_required()
 def get_studenti():
@@ -40,7 +43,9 @@ def get_studenti():
     if auth:
         return auth
 
+    # Recupera l'identità del docente autenticato dal token.
     docente_id = get_jwt_identity()
+    # Cerca tutte le pratiche associate a quel docente.
     studenti = select(applicazione).where(applicazione.username_docente == docente_id)
     stud = db.session.execute(studenti).scalars().all()
 
@@ -58,6 +63,7 @@ def get_applicazione(username):
     if auth:
         return auth
 
+    # Cerca la pratica dello studente specifico, ma solo se è assegnata a questo docente.
     docente_id = get_jwt_identity()
     application = select(applicazione).where(
         applicazione.username_docente == docente_id,
@@ -80,6 +86,7 @@ def get_learning_agreement(username, ida):
     if auth:
         return auth
 
+    # Verifica che la pratica esista e appartenga al docente corrente.
     docente_id = get_jwt_identity()
 
     learningA = select(applicazione).where(
@@ -102,6 +109,8 @@ def get_learning_agreement(username, ida):
         return jsonify({"msg": "file non trovato"}), 404
 
 
+# Mostra il dettaglio completo di una pratica.
+# Recupera i dati della domanda, dello studente, dell'istituto e del piano degli esami.
 @bp_docente.route("/pratiche/<ida>", methods=["GET"])
 @jwt_required()
 def get_dettaglio_app(ida):
@@ -111,7 +120,7 @@ def get_dettaglio_app(ida):
 
     docente_id = get_jwt_identity()
     
-    # 2. Carica la pratica (verificando che appartenga al docente)
+    # Carica la pratica e verifica che sia realmente assegnata a questo docente.
     app = db.session.execute(
         select(applicazione).where(
             applicazione.ida == ida, 
@@ -122,7 +131,7 @@ def get_dettaglio_app(ida):
     if not app:
         return jsonify({"error": "Pratica non trovata o non autorizzata"}), 404
 
-    # 3. Carica i dati correlati in modo esplicito
+    # Recupera i dati collegati alla pratica: esami, istituto e studente.
     db.session.expire_all()
     esami = db.session.execute(
         select(pianoesami).where(pianoesami.ida == ida)
@@ -132,7 +141,7 @@ def get_dettaglio_app(ida):
     stud = db.session.get(utenti, app.username_studente)
     learn = db.session.get(learningagreement, app.idla)
 
-    # 4. Costruisci il dizionario di risposta
+    # Costruisce il payload che verrà inviato al frontend.
     dettaglio = {
         "ida": app.ida,
         "stato": app.stato,
@@ -175,6 +184,8 @@ def get_dettaglio_app(ida):
     return jsonify(dettaglio), 200
 
 
+# Valuta un learning agreement ricevuto dallo studente.
+# A seconda della decisione, cambia lo stato della pratica e aggiorna gli esami oppure ripristina i dati da backup.
 @bp_docente.route("/learning-agreement/<string:idla>/valuta", methods=["PUT"])
 @jwt_required()
 def valuta_learning_agreement(idla):
@@ -183,6 +194,7 @@ def valuta_learning_agreement(idla):
         return auth
 
     dati = request.json
+    # Il frontend invia la decisione del docente e, eventualmente, una motivazione.
     decisione = dati.get("decisione")  # Riceverà 'Si' o 'No'
     motivazione = dati.get("motivazione", "")
     try:
@@ -200,7 +212,7 @@ def valuta_learning_agreement(idla):
         la.stato = decisione
         la.motivazione = motivazione
 
-        # 3. Aggiorna automaticamente lo stato della pratica (applicazione) collegata
+        # Aggiorna anche lo stato della pratica collegata al learning agreement.
         query = select(applicazione).where(applicazione.idla == idla)
         app = db.session.execute(query).scalars().first()
         query = select(learningagreement).where(learningagreement.idla == idla)
@@ -219,11 +231,8 @@ def valuta_learning_agreement(idla):
                 
                 # Distingui tra rifiuto iniziale e rifiuto di modifica
                 if app.dataarrivo and app.datapartenza:
-                    # È una modifica durante la mobilità — non annullare
-                    # lo stato rimane invariato
                     app.stato="in corso"
                 else:
-                    # È il primo LA — annulla la pratica
                     app.stato = "annullato"
                 
                 # Ripristina esami dal backup (in entrambi i casi)
@@ -272,6 +281,8 @@ def valuta_learning_agreement(idla):
         return jsonify({"error": "Errore interno del server"}), 500
 
 
+# Segna un esame come approvato o rifiutato.
+# Se tutti gli esami di una pratica vengono approvati, la pratica viene considerata completata.
 @bp_docente.route("/esami/<string:idpe>/riconosci", methods=["PUT"])
 @jwt_required()
 def riconosci_esame(idpe):
@@ -280,6 +291,7 @@ def riconosci_esame(idpe):
         return auth
 
     dati = request.json
+    # La richiesta indica se l'esame viene accettato o respinto.
     decisione = dati.get("decisione")  # Riceverà 'approvato' o 'rifiutato'
     esame = (
         db.session.execute(select(pianoesami).where(pianoesami.idpe == idpe))
@@ -290,6 +302,7 @@ def riconosci_esame(idpe):
     if not esame:
         return jsonify({"msg": "Esame non trovato"}), 404
 
+    # Aggiorna lo stato dell'esame scelto.
     esame.stato = decisione
 
     app = (

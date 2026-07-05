@@ -23,6 +23,7 @@ bp_ufficio = Blueprint(
 
 
 def require_role(expected_role):
+    """Controlla che il token dell'ufficio abbia il ruolo richiesto."""
     claims = get_jwt()
     if claims.get("ruolo") != expected_role:
         return jsonify({"msg": "Accesso non autorizzato"}), 403
@@ -32,6 +33,7 @@ studente = aliased(utenti)
 docente = aliased(utenti)
 
 
+# Restituisce tutte le pratiche presenti nel sistema per l'ufficio.
 @bp_ufficio.route("/app/tutte", methods=["GET"])
 @jwt_required()
 def tutte_le_app():
@@ -49,6 +51,7 @@ def tutte_le_app():
     pratiche = db.session.execute(query).all()
 
     lista_pratiche = []
+    # Costruisce il formato dei dati da inviare al frontend per la lista delle pratiche.
     for app, ist, stud, doc in pratiche:
         lista_pratiche.append(
             {
@@ -74,6 +77,7 @@ def tutte_le_app():
     return jsonify(lista_pratiche), 200
 
 
+# Mostra il dettaglio completo di una pratica, inclusi studente, docente, istituto ed esami.
 @bp_ufficio.route("/pratiche/<id_pratica>", methods=["GET"])
 @jwt_required()
 def dettaglio_pratica(id_pratica):
@@ -100,8 +104,7 @@ def dettaglio_pratica(id_pratica):
     stud = risultati[0][3]
     doc = risultati[0][4]
 
-    # 3. Estrai l'elenco di TUTTI gli esami da TUTTE le righe
-    # riga[2] corrisponde a 'pianoesami' nel tuo select(...) originale
+    # Unisce i dati della pratica con tutti gli esami restituiti dalla query.
     tutti_gli_esami = [row[2] for row in risultati]
 
     dettaglio = {
@@ -142,6 +145,7 @@ def dettaglio_pratica(id_pratica):
     return jsonify(dettaglio), 200
 
 
+# Aggiorna lo stato di una pratica dopo aver verificato i requisiti necessari.
 @bp_ufficio.route("/pratiche/<string:id_pratica>/stato", methods=["PUT"])
 @jwt_required()
 def verifica_app(id_pratica):
@@ -161,6 +165,7 @@ def verifica_app(id_pratica):
     if not app:
         return jsonify({"msg": "applicazione non trovata"}), 400
     
+    # Se la pratica entra in corso, richiede un learning agreement approvato.
     if statoAgg == "in corso":
 
         if not app.idla:
@@ -172,6 +177,7 @@ def verifica_app(id_pratica):
         if not la or str(la.accettato).lower() not in ['sì', 'si', 'approvato']: 
             return jsonify({"msg": "⛔ Impossibile passare 'in corso': Il Docente non ha ancora approvato il Learning Agreement!"}), 403
 
+    # Se la pratica viene chiusa o completata, serve il transcript of records caricato.
     if statoAgg in ["completato", "chiusa", "chiuso"]:
         if not app.transcriptofrecords or str(app.transcriptofrecords).lower() != "caricato":
             return jsonify({"msg": "⛔ Impossibile chiudere la pratica: Il Transcript of Records non è ancora stato caricato!"}), 403
@@ -186,6 +192,7 @@ def verifica_app(id_pratica):
         return jsonify({"msg": f"Errore database: {str(e)}"}), 500
 
 
+# Aggiunge un nuovo istituto al sistema tramite l'ufficio.
 @bp_ufficio.route("/istituti", methods=["POST"])
 @jwt_required()
 def aggiungi_istituto():
