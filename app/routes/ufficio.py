@@ -186,36 +186,6 @@ def verifica_app(id_pratica):
         return jsonify({"msg": f"Errore database: {str(e)}"}), 500
 
 
-
-#inutilizzate
-@bp_ufficio.route("/app/da-approvare", methods=["GET"])
-@jwt_required()
-def app_da_verificare():
-    auth = require_role("ufficio")
-    if auth:
-        return auth
-
-    query = select(applicazione).where(applicazione.stato == "pre-partenza")
-
-    pratiche = db.session.execute(query).scalars().all()
-
-    return jsonify([p.to_dict() for p in pratiche])
-
-
-@bp_ufficio.route("/app/da-chiudere", methods=["GET"])
-@jwt_required()
-def app_da_chiudere():
-    auth = require_role("ufficio")
-    if auth:
-        return auth
-
-    query = select(applicazione).where(applicazione.stato == "viaggioCompletato")
-
-    chiusure = db.session.execute(query).scalars().all()
-
-    return jsonify([c.to_dict() for c in chiusure])
-
-
 @bp_ufficio.route("/istituti", methods=["POST"])
 @jwt_required()
 def aggiungi_istituto():
