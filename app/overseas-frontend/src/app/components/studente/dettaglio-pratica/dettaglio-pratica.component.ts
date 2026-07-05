@@ -51,37 +51,37 @@ import { PraticaMobilita } from '../../../models/models';
           @for (esame of pratica.pianoesami; track $index; let i = $index) {
             <tr>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso' ||  pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso' ) {
                   <input [(ngModel)]="esame.codice_estero" name="cod_est_{{i}}" class="mini-input" style="width:80px">
                 } @else { {{ esame.codice_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso') {
                   <input [(ngModel)]="esame.titolo_estero" name="tit_est_{{i}}" class="mini-input">
                 } @else { {{ esame.titolo_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso') {
                   <input [(ngModel)]="esame.crediti_estero" name="cfu_est_{{i}}" type="number" class="mini-input" style="width:50px">
                 } @else { {{ esame.crediti_estero }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso') {
                   <input [(ngModel)]="esame.codice_cafoscari" name="cod_cf_{{i}}" class="mini-input" style="width:80px">
                 } @else { {{ esame.codice_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso') {
                   <input [(ngModel)]="esame.titolo_cafoscari" name="tit_cf_{{i}}" class="mini-input">
                 } @else { {{ esame.titolo_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa' || pratica.stato === 'in corso') {
                   <input [(ngModel)]="esame.crediti_cafoscari" name="cfu_cf_{{i}}" type="number" class="mini-input" style="width:50px">
                 } @else { {{ esame.crediti_cafoscari }} }
               </td>
               <td>
-                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa'|| pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+                @if (pratica.stato === 'pre-partenza' || pratica.stato === 'in attesa'|| pratica.stato === 'in corso') {
                   <button class="btn btn-sm btn-danger" (click)="eliminaEsame(i)">🗑️</button>
                 }
               </td>
@@ -90,7 +90,7 @@ import { PraticaMobilita } from '../../../models/models';
         </tbody>
       </table>
 
-      @if (pratica.stato === 'in attesa' || pratica.stato === 'pre-partenza' || pratica.stato === 'in corso'|| pratica.stato === 'annullato') {
+      @if (pratica.stato === 'in attesa' || pratica.stato === 'pre-partenza' || pratica.stato === 'in corso') {
         <button class="btn btn-secondary btn-sm" style="margin-top:10px" (click)="aggiungiEsame()">+ Aggiungi Esame</button>
         
         <div style="margin-top:2rem; border-top: 1px solid #eee; padding-top:1rem;">
