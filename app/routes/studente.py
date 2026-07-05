@@ -245,6 +245,7 @@ def create_myapp():
         return jsonify({"ida": app.ida, "id": app.ida}), 201
     except Exception as e:
         db.session.rollback()
+        print({e})
         return jsonify({"error": "Errore interno durante l'eliminazione"}), 500
 
 

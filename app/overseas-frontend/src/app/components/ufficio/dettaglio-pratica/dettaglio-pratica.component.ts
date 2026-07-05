@@ -30,17 +30,6 @@ import { PraticaMobilita } from '../../../models/models';
         }
       </div>
 
-      <!-- Verifica pre-partenza -->
-      @if (pratica.stato === 'in attesa' && ultimoLaApprovato()) {
-        <div class="alert-info">
-          Il Learning Agreement è stato approvato dal docente. Puoi verificare e completare la fase pre-partenza.
-        </div>
-        <div class="card">
-          <div class="card-title">Verifica pre-partenza</div>
-          <button class="btn btn-primary" (click)="completaPrePartenza()">✓ Conferma completamento pre-partenza</button>
-        </div>
-      }
-
       <!-- modifica stato -->
       <div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #1a3a6b;">
         <div class="card-title" style="margin-bottom: 10px; font-weight: bold;">Modifica Stato</div>
@@ -75,17 +64,6 @@ import { PraticaMobilita } from '../../../models/models';
               }
             </tbody>
           </table>
-        </div>
-      }
-
-      <!-- Chiusura pratica -->
-      @if (pratica.stato === 'viaggioCompletato' && tuttiEsamiApprovati() && pratica.transcript) {
-        <div class="alert-success">
-          Transcript of Records caricato e tutti gli esami approvati dal docente. La pratica può essere chiusa.
-        </div>
-        <div class="card">
-          <div class="card-title">Chiusura pratica</div>
-          <button class="btn btn-primary" (click)="chiudiPratica()">🔒 Chiudi pratica definitivamente</button>
         </div>
       }
 
