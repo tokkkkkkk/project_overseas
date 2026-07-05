@@ -123,8 +123,8 @@ def dettaglio_pratica(id_pratica):
         },
         "pianoesami": [
             {
-                # Cambia le chiavi (a sinistra) per farle combaciare ESATTAMENTE con l'HTML
-                "id": e.idpe,  # Risolve il crash del "track esame.id"
+                
+                "id": e.idpe,
                 "codice_estero": e.codiceinsegnamentoestero,
                 "titolo_estero": e.titoloinsegnamentoestero,
                 "crediti_estero": e.creditiinsegnamentoestero,
@@ -187,7 +187,7 @@ def verifica_app(id_pratica):
 
 
 
-
+#inutilizzate
 @bp_ufficio.route("/app/da-approvare", methods=["GET"])
 @jwt_required()
 def app_da_verificare():
