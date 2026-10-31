@@ -61,9 +61,14 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Flask and local data
 instance/
+*.sqlite
+*.sqlite3
+*.db
 .webassets-cache
+app/static/uploads/*
+!app/static/uploads/.gitkeep
 
 # Scrapy stuff:
 .scrapy
@@ -149,6 +154,8 @@ activemq-data/
 
 # Environments
 .env
+.env.*
+!.env.example
 .envrc
 .venv
 env/
@@ -208,6 +215,8 @@ tempCodeRunnerFile.py
 
 # PyPI configuration file
 .pypirc
+*.pem
+*.key
 
 # Marimo
 marimo/_static/
